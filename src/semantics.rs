@@ -12,12 +12,14 @@ pub struct SymbolTable {
 
 impl SymbolTable {
     /**
-     * Adds a row to the symbol table. Will panic if a duplicate identifier is found.
+     * Adds a row to the symbol table. Will panic if a duplicate identifier in an overlapping scope 
+     * is found.
      */
     pub fn add(&mut self, new_row:SymbolTableRow) {
         let new_identifier = new_row.get_identifier();
         for row in &self.rows {
-            if row.get_identifier() == new_identifier {
+            if row.get_identifier() == new_row.get_identifier()  && 
+                    row.get_function_identifier() == new_row.get_function_identifier() {
                 panic!("Duplicate identifier {} detected", new_identifier);
             }
         }
@@ -57,6 +59,18 @@ impl SymbolTableRow {
             SymbolTableRow::Variable {identifier, ..} => identifier.to_string()
         }
     }
+
+
+    /**
+     * Gets the identifier of the symbol table row if this row is a function, or the identifier of the
+     * parent function if the row is a variable.
+     */
+    fn get_function_identifier(&self) -> String {
+        match self {
+            SymbolTableRow::Function {identifier, ..} => identifier.to_string(),
+            SymbolTableRow::Variable {function, ..} => function.get_identifier().to_string()
+        }
+    } 
 }
 
 
