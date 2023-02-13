@@ -44,6 +44,16 @@ pub enum Operator {
 
 
 /**
+ * Represents the mutability of a variable.
+ */
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub enum Mutability {
+    Mutable,
+    Constant
+}
+
+
+/**
  * Represents a node in the AST, including information about the node such as:
  *  - identifier
  *  - literal value
@@ -63,6 +73,7 @@ pub enum ASTNode {
 
     VarDeclStatement {
         var_type: Type,
+        mutability: Mutability,
         identifier: String,
         value: Box<ASTNode>
     },
@@ -134,6 +145,24 @@ fn get_binary_operator_from_str(operator_str:&str) -> Operator {
         "*" => Operator::Multiplication,
         "/" => Operator::Division,
         _ => panic!("Unknown operator {}", operator_str)
+    }
+}
+
+
+/**
+ * Takes a string representing a mutability modifier of mutable or constant and returns the corresponding
+ * representation from the `Mutability` enum.
+ * 
+ * ### Examples
+ * `assert_eq!("mut", Mutability::Mutabile)`
+ * 
+ * `assert_eq!("const", Mutability::Constant)`
+ */
+fn get_mutability_from_str(mutability_str:&str) -> Mutability {
+    match mutability_str {
+        "mut" => Mutability::Mutable,
+        "const" => Mutability::Constant,
+        _ => panic!("Unknown mutability modifier {}", mutability_str)
     }
 }
 
@@ -281,6 +310,12 @@ fn build_ast_from_return_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  */
 fn build_ast_from_var_decl_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
+    let mutability = match parent.peek().unwrap().as_rule() {
+        Rule::mutability_mod => get_mutability_from_str(parent.next().unwrap().as_str()),
+        Rule::primitive_type => Mutability::Constant,
+        _ => panic!("Could not parse variable declaration {:?}", pair.as_str())
+    };
+
     let var_type = get_type_from_string(parent.next().unwrap().as_str());
     let identifier = parent.next().unwrap().as_str().to_string();
 
@@ -299,6 +334,7 @@ fn build_ast_from_var_decl_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
     ASTNode::VarDeclStatement {
         var_type: var_type,
+        mutability: mutability,
         identifier: identifier,
         value: Box::new(value)
     }

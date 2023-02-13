@@ -7,14 +7,14 @@ float = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
 number = {float | int_literal}
 string = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
 char = {"'" ~ ANY ~ "'"}
-type = @{("string" | "char" | "int" | "float" | "void" | "long" | "double")}
+primitive_type = @{("string" | "char" | "int" | "float" | "void" | "long" | "double")}
 identifier = @{(ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
 value = {string | char | float | int_literal}
 
-parameter = @{type ~ WHITESPACE+ ~ identifier}
+parameter = @{primitive_type ~ WHITESPACE+ ~ identifier}
 param_list = {((parameter ~ ",")* ~ parameter)}
 value_list = {((value ~ ",")* ~ value)}
-function_decl = {"fn" ~ type ~ identifier ~ "(" ~ param_list? ~ ")" ~ "{" ~ statement* ~ "}"}
+function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ "{" ~ statement* ~ "}"}
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
 print = {"print" ~ ((identifier | value ) ~ ",")* ~ (identifier | value) ~ ";"}
@@ -40,6 +40,6 @@ else = {"else" ~ "{" ~ statement* ~ "}"}
 if_stmt = {if ~ else_if* ~ else?}
 
 mutability_mod = {("mut" | "const")}
-var_decl = {"let " ~ mutability_mod? ~ type ~ identifier ~ "=" ~ (expression | term) ~ ";"}
+var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (expression | term) ~ ";"}
 var_assign = {identifier ~ "=" ~ (expression | term) ~ ";"}
 return_stmt = {"return " ~ (expression | term) ~ ";"}
