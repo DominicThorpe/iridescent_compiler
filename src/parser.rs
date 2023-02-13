@@ -33,9 +33,13 @@ pub enum Literal {
  */
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Operator {
-    NumericNegation,
-    LogicalNegation,
-    Complement
+    NegateNumerical,
+    NegateLogical,
+    Complement,
+    Addition,
+    Subtraction,
+    Multiplication,
+    Division
 }
 
 
@@ -59,7 +63,8 @@ pub enum ASTNode {
 
     Expression {
         lhs: Box<ASTNode>,
-        operator: Option<Operator>
+        operator: Option<Operator>,
+        rhs: Option<Box<ASTNode>>
     },
 
     Term {
@@ -91,17 +96,37 @@ fn get_type_from_string(type_str:&str) -> Type {
 
 
 /**
- * Takes a string representing an operator and returns an `Operator` struct object 
+ * Takes a string representing a unary operator and returns an `Operator` struct object 
  * representing it.
  * 
  * ### Examples
  * `assert_eq!("!", Type::LogicalNegation)`
  */
-fn get_operator_from_str(operator_str:&str) -> Operator {
+fn get_unary_operator_from_str(operator_str:&str) -> Operator {
     match operator_str {
-        "!" => Operator::LogicalNegation,
-        "-" => Operator::NumericNegation,
+        "!" => Operator::NegateLogical,
+        "-" => Operator::NegateNumerical,
         "~" => Operator::Complement,
+        _ => panic!("Unknown operator {}", operator_str)
+    }
+}
+
+
+/**
+ * Takes a string representing a unary operator and returns an `Operator` struct object 
+ * representing it.
+ * 
+ * ### Examples
+ * `assert_eq!("+", Type::Addition)`
+ * 
+ * `assert_eq!("-", Type::Subtraction)`
+ */
+fn get_binary_operator_from_str(operator_str:&str) -> Operator {
+    match operator_str {
+        "+" => Operator::Addition,
+        "-" => Operator::Subtraction,
+        "*" => Operator::Multiplication,
+        "/" => Operator::Division,
         _ => panic!("Unknown operator {}", operator_str)
     }
 }
@@ -185,6 +210,7 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  * children nodes.
  */
 fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    // get the left hand side of the expression from the first token
     let mut parent = pair.clone().into_inner();
     let value_or_expr = parent.next().unwrap();
     let term = match value_or_expr.as_rule() {
@@ -197,14 +223,34 @@ fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
         _ => panic!("Could not parse expression {:?}", pair.as_str())
     };
     
-    let operator = match parent.next() {
-        Some(token) => Some(get_operator_from_str(token.as_str())),
+    // get the operator and right hand side of the expression if they exist
+    let lhs:Box<ASTNode> = Box::new(term);
+    let operator:Option<Operator>;
+    let mut rhs:Option<Box<ASTNode>> = None;
+
+    // get the operator if there is one from the 2nd child token of the expression if the operator is unary, or 
+    // the 3rd if it is a binary expression
+    operator = match parent.next() { 
+        Some(token) => {
+            match token.as_rule() {
+                Rule::unary_operator => Some(get_unary_operator_from_str(token.as_str())),
+                Rule::term => { // get the right hand side if there is one from the 2nd child of the expression
+                    rhs = Some(Box::new(build_ast_from_term(token)));
+                    Some(get_binary_operator_from_str(parent.next().unwrap().as_str()))
+                }
+
+                _ => panic!("Could not parse expression {:?}", pair.as_str())
+            }
+        },
+
         None => None
     };
 
+    // build and return the expression node
     ASTNode::Expression {
-        lhs: Box::new(term),
-        operator: operator
+        lhs: lhs,
+        operator: operator,
+        rhs: rhs
     }
 }
 
