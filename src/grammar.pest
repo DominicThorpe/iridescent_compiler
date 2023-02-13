@@ -1,4 +1,5 @@
 WHITESPACE = _{" " | NEWLINE }
+COMMENT = _{("/*" ~ (!"*/" ~ ANY)* ~ "*/")}
 program = {SOI ~ function_decl* ~ EOI}
 
 int_literal = @{("0b" ~ ("0" | "1")*) | ("0x" ~ ASCII_HEX_DIGIT*) | ASCII_DIGIT*}

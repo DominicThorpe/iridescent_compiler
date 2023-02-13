@@ -63,7 +63,7 @@ pub enum ASTNode {
     },
 
     Term {
-        value: Box<ASTNode>
+        child: Box<ASTNode>
     },
     
     Value {
@@ -167,11 +167,15 @@ fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  */
 fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
-    let literal = parent.next().unwrap();
-    let value = build_ast_from_value(literal);
+    let val_or_expr = parent.next().unwrap();
+    let child = match val_or_expr.as_rule() {
+        Rule::value => build_ast_from_value(val_or_expr),
+        Rule::expression => build_ast_from_expression(val_or_expr),
+        _ => panic!("Could not parse term {:?}", pair.as_str())
+    };
 
     ASTNode::Term {
-        value: Box::new(value)
+        child: Box::new(child)
     }
 }
 
@@ -181,14 +185,13 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  * children nodes.
  */
 fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
-    let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
+    let mut parent = pair.clone().into_inner();
     let value_or_expr = parent.next().unwrap();
-    println!("V or X: {:?}", value_or_expr);
     let term = match value_or_expr.as_rule() {
         Rule::term => build_ast_from_term(value_or_expr),
         Rule::value => {
             ASTNode::Term {
-                value: Box::new(build_ast_from_value(value_or_expr))
+                child: Box::new(build_ast_from_value(value_or_expr))
             }
         },
         _ => panic!("Could not parse expression {:?}", pair.as_str())
@@ -211,7 +214,7 @@ fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  * children nodes.
  */
 fn build_ast_from_return_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
-    let mut parent = pair.clone().into_inner();
+    let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
     let expression = build_ast_from_expression(parent.next().unwrap());
 
     ASTNode::ReturnStatement {
