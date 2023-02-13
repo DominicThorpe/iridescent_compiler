@@ -78,6 +78,11 @@ pub enum ASTNode {
         value: Box<ASTNode>
     },
 
+    VarAssignStatement {
+        identifier: String,
+        value: Box<ASTNode>
+    },
+
     Expression {
         lhs: Box<ASTNode>,
         operator: Option<Operator>,
@@ -163,6 +168,26 @@ fn get_mutability_from_str(mutability_str:&str) -> Mutability {
         "mut" => Mutability::Mutable,
         "const" => Mutability::Constant,
         _ => panic!("Unknown mutability modifier {}", mutability_str)
+    }
+}
+
+
+/**
+ * Takes a `Pair` representing an expression or a term and returns an `Expression` struct representing
+ * that pair and its children. If the pair is a term, then it will be made the single child of a new
+ * `Expression` node.
+ */
+fn get_expr_from_expr_or_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    match pair.as_rule() {
+        Rule::expression => build_ast_from_expression(pair),
+        Rule::term => {
+            ASTNode::Expression {
+                lhs: Box::new(build_ast_from_term(pair)),
+                operator: None,
+                rhs: None
+            }
+        },
+        _ => panic!("Could not parse expression {:?}", pair.as_str())
     }
 }
 
@@ -320,21 +345,29 @@ fn build_ast_from_var_decl_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let identifier = parent.next().unwrap().as_str().to_string();
 
     let value_token = parent.next().unwrap();
-    let value = match value_token.as_rule() {
-        Rule::expression => build_ast_from_expression(value_token),
-        Rule::term => {
-            ASTNode::Expression {
-                lhs: Box::new(build_ast_from_term(value_token)),
-                operator: None,
-                rhs: None
-            }
-        },
-        _ => panic!("Could not parse variable declaration {:?}", pair.as_str())
-    };
+    let value = get_expr_from_expr_or_term(value_token);
 
     ASTNode::VarDeclStatement {
         var_type: var_type,
         mutability: mutability,
+        identifier: identifier,
+        value: Box::new(value)
+    }
+}
+
+
+/**
+ * Takes a `Pair` representing a variable assignment statement and returns it as a subtree of the AST, 
+ * including children nodes.
+ */
+fn build_ast_from_var_assign_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
+    let identifier = parent.next().unwrap().as_str().to_string();
+
+    let value_token = parent.next().unwrap();
+    let value = get_expr_from_expr_or_term(value_token);
+    
+    ASTNode::VarAssignStatement {
         identifier: identifier,
         value: Box::new(value)
     }
@@ -350,6 +383,7 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     match token.as_rule() {
         Rule::return_stmt => build_ast_from_return_stmt(pair),
         Rule::var_decl => build_ast_from_var_decl_stmt(pair),
+        Rule::var_assign => build_ast_from_var_assign_stmt(pair),
         _ => panic!("Could not parse statement {:?}", pair.as_str())
     }
 }
