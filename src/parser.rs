@@ -20,11 +20,22 @@ pub enum Type {
 
 
 /**
- * Represents a literal of any primitive datatype/
+ * Represents a literal of any primitive datatype.
  */
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Literal {
     Integer(i64),
+}
+
+
+/**
+ * Represents unary and binary operators.
+ */
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub enum Operator {
+    NumericNegation,
+    LogicalNegation,
+    Complement
 }
 
 
@@ -47,7 +58,8 @@ pub enum ASTNode {
     },
 
     Expression {
-        lhs: Box<ASTNode>
+        lhs: Box<ASTNode>,
+        operator: Option<Operator>
     },
 
     Term {
@@ -75,6 +87,23 @@ fn get_type_from_string(type_str:&str) -> Type {
         "int" => Type::Integer,
         _ => panic!("Unknown type {}", type_str)
     } 
+}
+
+
+/**
+ * Takes a string representing an operator and returns an `Operator` struct object 
+ * representing it.
+ * 
+ * ### Examples
+ * `assert_eq!("!", Type::LogicalNegation)`
+ */
+fn get_operator_from_str(operator_str:&str) -> Operator {
+    match operator_str {
+        "!" => Operator::LogicalNegation,
+        "-" => Operator::NumericNegation,
+        "~" => Operator::Complement,
+        _ => panic!("Unknown operator {}", operator_str)
+    }
 }
 
 
@@ -121,7 +150,7 @@ fn get_int_from_str_literal(literal:&str) -> i64 {
  */
 fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
-    let literal = parent.next().unwrap().into_inner().next().unwrap().into_inner().next().unwrap();
+    let literal = parent.next().unwrap().into_inner().next().unwrap();
     let value = match literal.as_rule() {
         Rule::int_literal => ASTNode::Value{
             literal_type: Type::Integer, 
@@ -138,16 +167,33 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
 
 /**
+ * Takes a `Pair` representing an expression and returns it as a subtree of the AST, including 
+ * children nodes.
+ */
+fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.into_inner().next().unwrap().into_inner();
+    let term = build_ast_from_term(parent.next().unwrap());
+    
+    let operator = match parent.next() {
+        Some(token) => Some(get_operator_from_str(token.as_str())),
+        None => None
+    };
+
+    ASTNode::Expression {
+        lhs: Box::new(term),
+        operator: operator
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a return statement and returns it as a subtree of the AST, including 
  * children nodes.
  */
 fn build_ast_from_return_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
-    let mut parent = pair.into_inner();
-    let term = parent.next().unwrap();
-    let expression = ASTNode::Expression {
-        lhs: Box::new(build_ast_from_term(term))
-    };
-    
+    let mut parent = pair.clone().into_inner();
+    let expression = build_ast_from_expression(parent.next().unwrap());
+
     ASTNode::ReturnStatement {
         expression: Box::new(expression)
     }

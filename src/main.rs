@@ -6,7 +6,7 @@ extern crate pest_derive;
 
 
 fn main() {
-    let filename = "test.iri";
+    let filename = "idk.iri";
     let ast = parser::parse(filename).unwrap();
 
     println!("{:#?}", ast);
