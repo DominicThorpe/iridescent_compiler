@@ -61,6 +61,12 @@ pub enum ASTNode {
         expression: Box<ASTNode>
     },
 
+    VarDeclStatement {
+        var_type: Type,
+        identifier: String,
+        value: Box<ASTNode>
+    },
+
     Expression {
         lhs: Box<ASTNode>,
         operator: Option<Operator>,
@@ -270,6 +276,36 @@ fn build_ast_from_return_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
 
 /**
+ * Takes a `Pair` representing a variable declaration statement and returns it as a subtree of the AST, 
+ * including children nodes.
+ */
+fn build_ast_from_var_decl_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
+    let var_type = get_type_from_string(parent.next().unwrap().as_str());
+    let identifier = parent.next().unwrap().as_str().to_string();
+
+    let value_token = parent.next().unwrap();
+    let value = match value_token.as_rule() {
+        Rule::expression => build_ast_from_expression(value_token),
+        Rule::term => {
+            ASTNode::Expression {
+                lhs: Box::new(build_ast_from_term(value_token)),
+                operator: None,
+                rhs: None
+            }
+        },
+        _ => panic!("Could not parse variable declaration {:?}", pair.as_str())
+    };
+
+    ASTNode::VarDeclStatement {
+        var_type: var_type,
+        identifier: identifier,
+        value: Box::new(value)
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
 fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>) -> ASTNode {
@@ -277,6 +313,7 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let token = parent.next().unwrap();
     match token.as_rule() {
         Rule::return_stmt => build_ast_from_return_stmt(pair),
+        Rule::var_decl => build_ast_from_var_decl_stmt(pair),
         _ => panic!("Could not parse statement {:?}", pair.as_str())
     }
 }
