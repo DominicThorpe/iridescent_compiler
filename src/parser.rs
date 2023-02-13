@@ -221,9 +221,9 @@ fn get_file_contents(filename:&str) -> Result<String, Box<dyn Error>> {
  */
 fn get_int_from_str_literal(literal:&str) -> i64 {
     if literal.starts_with("0b") {
-        return i64::from_str_radix(literal, 2).unwrap();
+        return i64::from_str_radix(&literal[2..], 2).unwrap();
     } else if literal.starts_with("0x") {
-        return i64::from_str_radix(literal, 16).unwrap();
+        return i64::from_str_radix(&literal[2..], 16).unwrap();
     } else {
         return literal.parse().unwrap();
     }
