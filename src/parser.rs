@@ -146,19 +146,29 @@ fn get_int_from_str_literal(literal:&str) -> i64 {
 
 
 /**
+ * Takes a `Pair` representing a value and returns it as a subtree of the AST, including children nodes.
+ */
+fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.clone().into_inner();
+    let value = parent.next().unwrap();
+    match value.as_rule() {
+        Rule::int_literal => ASTNode::Value{
+            literal_type: Type::Integer, 
+            value: Literal::Integer(get_int_from_str_literal(value.as_str()))
+        },
+
+        _ => panic!("Could not parse value {:?}", pair.as_str())
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a term and returns it as a subtree of the AST, including children nodes.
  */
 fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
-    let literal = parent.next().unwrap().into_inner().next().unwrap();
-    let value = match literal.as_rule() {
-        Rule::int_literal => ASTNode::Value{
-            literal_type: Type::Integer, 
-            value: Literal::Integer(get_int_from_str_literal(literal.as_str()))
-        },
-
-        _ => panic!("Could not parse term {:?}", pair.as_str())
-    };
+    let literal = parent.next().unwrap();
+    let value = build_ast_from_value(literal);
 
     ASTNode::Term {
         value: Box::new(value)
@@ -171,8 +181,18 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  * children nodes.
  */
 fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
-    let mut parent = pair.into_inner().next().unwrap().into_inner();
-    let term = build_ast_from_term(parent.next().unwrap());
+    let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
+    let value_or_expr = parent.next().unwrap();
+    println!("V or X: {:?}", value_or_expr);
+    let term = match value_or_expr.as_rule() {
+        Rule::term => build_ast_from_term(value_or_expr),
+        Rule::value => {
+            ASTNode::Term {
+                value: Box::new(build_ast_from_value(value_or_expr))
+            }
+        },
+        _ => panic!("Could not parse expression {:?}", pair.as_str())
+    };
     
     let operator = match parent.next() {
         Some(token) => Some(get_operator_from_str(token.as_str())),
