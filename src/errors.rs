@@ -32,3 +32,14 @@ impl fmt::Display for BadFunctionReturn {
         write!(f, "Function {} does not return a value but does not have the void return type.", self.0)
     }
 }
+
+
+#[derive(Debug)]
+pub struct ImmutableReassignmentError(pub String);
+impl Error for ImmutableReassignmentError {}
+
+impl fmt::Display for ImmutableReassignmentError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Cannot reassign constant variable {}", self.0)
+    }
+}

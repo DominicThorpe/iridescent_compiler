@@ -308,7 +308,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         
         ASTNode::VarAssignStatement {identifier, value} => {
             if symbol_table.get_mutability_in_scope(&identifier, &scope_history)? != Mutability::Mutable {
-
+                return Err(Box::new(ImmutableReassignmentError(identifier.to_string())));
             }
 
             symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
@@ -326,11 +326,11 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
 /**
  * Takes the root node of the AST and runs semantic analysis, checking for:
  *   - undeclared/out of scope variables
- * 
- * TODO:
  *   - no/incorrect return statements
  *   - reassignment to immutable variable
  *   - operations on non-matching datatypes
+ * 
+ * TODO:
  *   - invalid-sized literal assignments
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
