@@ -47,14 +47,18 @@ impl SymbolTable {
     }
 
 
-    fn check_identifier_in_scope(&self, identifier:String, scope_history:Vec<usize>) -> Result<(), Box<dyn Error>> {
+    /**
+     * Takes an identifier and an array of the scopes containing the symbol starting broad and moving down, and returns 
+     * the scope of the symbol if the identifier is in scope, and an Error if not.
+     */
+    fn get_identifier_in_scope(&self, identifier:&str, scope_history:&Vec<usize>) -> Result<usize, Box<dyn Error>> {
         for row in &self.rows {
-            if row.get_identifier() == identifier && scope_history.contains(&row.get_scope_id()) {
-                return Ok(());
+            if row.get_identifier() == identifier && scope_history.contains(&row.get_parent_scope_id()) {
+                return Ok(row.get_scope_id());
             }
         }
 
-        Err(Box::new(SymbolNotFoundError(identifier)))
+        Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
     }
 }
 
@@ -69,7 +73,7 @@ pub enum SymbolTableRow {
         identifier: String,
         primitive_type: Type,
         mutability: Mutability,
-        scope: usize,
+        parent_scope: usize,
         parent: Box<SymbolTableRow>
     },
 
@@ -77,7 +81,7 @@ pub enum SymbolTableRow {
         identifier: String,
         return_type: Type,
         scope: usize,
-        child_scopes: Vec<usize>
+        parent_scope: usize
     }
 }
 
@@ -99,7 +103,18 @@ impl SymbolTableRow {
     fn get_scope_id(&self) -> usize {
         match self {
             SymbolTableRow::Function {scope, ..} => *scope,
-            SymbolTableRow::Variable {scope, ..} => *scope
+            SymbolTableRow::Variable {parent_scope, ..} => *parent_scope
+        }
+    }
+
+
+    /**
+     * Returns the ID of the scope of the symbol's parent
+     */
+    fn get_parent_scope_id(&self) -> usize {
+        match self {
+            SymbolTableRow::Function {parent_scope, ..} => *parent_scope,
+            SymbolTableRow::Variable {parent_scope, ..} => *parent_scope
         }
     }
 
@@ -121,25 +136,22 @@ impl SymbolTableRow {
  * Takes an `ASTNode` struct and either generates a row for the symbol table, which is passed by
  * reference, or calls itself recursively on each of that row's children to generate additional 
  * rows for them.
- * 
- * Will panic if it finds an invalid reference to an identifier.
  */
-fn semantic_analysis_subtree(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>, mut scope_history:Vec<usize>) {
+fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>) {
     match subtree.clone() {
         ASTNode::Function {return_type, identifier, statements} => {
             let scope_id = table.get_next_scope_id();
-            scope_history.push(scope_id);
             let function_row = SymbolTableRow::Function {
                 identifier: identifier,
                 return_type: return_type,
-                scope: scope_id,
-                child_scopes: vec![]
+                parent_scope: 0,
+                scope: scope_id
             };
             table.add(function_row.clone());
 
 
             for statement in statements {
-                semantic_analysis_subtree(statement, table, Some(function_row.clone()), scope_history.clone());
+                generate_sub_symbol_table(statement, table, Some(function_row.clone()));
             }
         },
 
@@ -149,17 +161,11 @@ fn semantic_analysis_subtree(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
                     identifier: identifier,
                     primitive_type: var_type,
                     mutability: mutability,
-                    scope: parent.clone().unwrap().get_scope_id(),
+                    parent_scope: parent.clone().unwrap().get_scope_id(),
                     parent: Box::new(parent.expect(&format!("Statement {:?} does not have a parent.", subtree)))
                 }
             )
         },
-
-        ASTNode::VarAssignStatement {identifier, ..} => {
-            table.check_identifier_in_scope(identifier, scope_history).unwrap();
-        },
-
-        ASTNode::Identifier(_) => {}
 
         _ => {}
     };
@@ -167,13 +173,57 @@ fn semantic_analysis_subtree(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 
 
 /**
+ * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
+ * is taken into consideration.
+ */
+fn semantic_validation_subtree(node:ASTNode, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
+    match node {
+        ASTNode::Function {identifier, statements, ..} => {
+            for statement in statements {
+                let mut scope_history = scope_history.clone();
+                scope_history.push(symbol_table.get_identifier_in_scope(&identifier, &scope_history)?);
+                semantic_validation_subtree(statement, &symbol_table, &mut scope_history)?;
+            }
+        },
+        
+        ASTNode::VarAssignStatement {identifier, ..} => {
+            symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
+        },
+
+        ASTNode::Identifier(_) => {},
+
+        _ => {}
+    }
+
+    Ok(())
+}
+
+
+/**
+ * Takes the root node of the AST and runs semantic analysis, checking for:
+ *   - undeclared/out of scope variables
+ * 
+ * TODO:
+ *   - no/incorrect return statements
+ *   - reassignment to immutable variable
+ */
+pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
+    for node in root {
+        semantic_validation_subtree(node, symbol_table, &mut vec![0])?;
+    }
+
+    Ok(())
+}
+
+
+/**
  * Called to generate an entire symbol table for all functions and variables in a program. Takes the root
  * `Vec<ASTNode>` of the program.
  */
-pub fn semantic_analysis(root:Vec<ASTNode>) -> SymbolTable {
+pub fn generate_symbol_table(root:Vec<ASTNode>) -> SymbolTable {
     let mut table = SymbolTable { rows: vec![] };
     for node in root {
-        semantic_analysis_subtree(node, &mut table, None, vec![0]);
+        generate_sub_symbol_table(node, &mut table, None);
     }
 
     table
