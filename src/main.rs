@@ -11,5 +11,6 @@ fn main() {
     let filename = "idk.iri";
     let ast = parser::parse(filename).unwrap();
     let symbol_table = semantics::generate_symbol_table(ast.clone());
+    // println!("{:#?}", symbol_table);
     semantics::semantic_validation(ast, &symbol_table).unwrap();
 }

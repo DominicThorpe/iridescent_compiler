@@ -21,3 +21,14 @@ impl fmt::Display for IncorrectDatatype {
         write!(f, "Incorrect datatype detected.")
     }
 }
+
+
+#[derive(Debug)]
+pub struct BadFunctionReturn(pub String);
+impl Error for BadFunctionReturn {}
+
+impl fmt::Display for BadFunctionReturn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Function {} does not return a value but does not have the void return type.", self.0)
+    }
+}

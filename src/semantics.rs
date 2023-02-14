@@ -60,6 +60,36 @@ impl SymbolTable {
 
         Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
     }
+
+
+    /**
+     * Takes an identifier and an array of the scopes as in get_identifier_in_scope(), and returns the type or return type 
+     * of the symbol if the identifier is in scope, and an Error if not.
+     */
+    fn get_identifier_type_in_scope(&self, identifier:&str, scope_history:&Vec<usize>) -> Result<Type, Box<dyn Error>> {
+        for row in &self.rows {
+            if row.get_identifier() == identifier && scope_history.contains(&row.get_parent_scope_id()) {
+                return Ok(row.get_scope_type());
+            }
+        }
+
+        Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
+    }
+
+
+    /**
+     * Takes an identifier and an array of the scopes as in get_identifier_in_scope(), and returns the mutability of the 
+     * symbol if the identifier is in scope, and an Error if not.
+     */
+    fn get_mutability_in_scope(&self, identifier:&str, scope_history:&Vec<usize>) -> Result<Mutability, Box<dyn Error>> {
+        for row in &self.rows {
+            if row.get_identifier() == identifier && scope_history.contains(&row.get_parent_scope_id()) {
+                return Ok(row.get_mutability());
+            }
+        }
+
+        Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
+    }
 }
 
 
@@ -104,6 +134,28 @@ impl SymbolTableRow {
         match self {
             SymbolTableRow::Function {scope, ..} => *scope,
             SymbolTableRow::Variable {parent_scope, ..} => *parent_scope
+        }
+    }
+
+
+    /**
+     * Returns the type most appropriate to the entry in question: variable type or return type
+     */
+    fn get_scope_type(&self) -> Type {
+        match self {
+            SymbolTableRow::Function {return_type, ..} => return_type.clone(),
+            SymbolTableRow::Variable {primitive_type, ..} => primitive_type.clone()
+        }
+    }
+
+
+    /**
+     * Returns the mutability of the symbol, which is always `Constant` for a function
+     */
+    fn get_mutability(&self) -> Mutability {
+        match self {
+            SymbolTableRow::Function {..} => Mutability::Constant,
+            SymbolTableRow::Variable {mutability, ..} => mutability.clone()
         }
     }
 
@@ -177,7 +229,7 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<d
         ASTNode::Term { child } => {
             match &**child {
                 ASTNode::Expression {..} => {
-                    match validate_statement_of_type( &*child, &required_type ) {
+                    match validate_expression_of_type( &*child, &required_type ) {
                         Ok(_) => {},
                         Err(_) => {
                             return Err(Box::new(IncorrectDatatype)); 
@@ -186,7 +238,7 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<d
                 },
 
                 ASTNode::Value {literal_type, ..} => {
-                    if literal_type == required_type {
+                    if literal_type != required_type {
                         return Err(Box::new(IncorrectDatatype));
                     }
                 },
@@ -207,7 +259,7 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<d
  * semantically valid (i.e. everything is of the same datatype). Will return an Error if this
  * is not true.
  */
-fn validate_statement_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<dyn Error>> {
+fn validate_expression_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<dyn Error>> {
     match &node {
         ASTNode::Expression {lhs, rhs, ..} => {
             validate_term_of_type(lhs, required_type)?;
@@ -230,25 +282,39 @@ fn validate_statement_of_type(node:&ASTNode, required_type:&Type) -> Result<(), 
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
  */
-fn semantic_validation_subtree(node:ASTNode, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
+fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
     match node {
-        ASTNode::Function {identifier, statements, ..} => {
+        ASTNode::Function {identifier, statements, return_type} => {
+            let mut has_return = false;
             for statement in statements {
                 let mut scope_history = scope_history.clone();
                 scope_history.push(symbol_table.get_identifier_in_scope(&identifier, &scope_history)?);
                 semantic_validation_subtree(statement, &symbol_table, &mut scope_history)?;
+
+                match statement.clone() {
+                    ASTNode::ReturnStatement { expression } => {
+                        validate_expression_of_type(&expression, &return_type)?;
+                        has_return = true;
+                    },
+
+                    _ => {}
+                }
+            }
+
+            if return_type != &Type::Void && !has_return {
+                return Err(Box::new(BadFunctionReturn(identifier.to_string())));
             }
         },
-
-        ASTNode::Expression {..} => {
-            validate_statement_of_type(&node, &Type::Integer)?;
-        },
         
-        ASTNode::VarAssignStatement {identifier, ..} => {
-            symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
-        },
+        ASTNode::VarAssignStatement {identifier, value} => {
+            if symbol_table.get_mutability_in_scope(&identifier, &scope_history)? != Mutability::Mutable {
 
-        ASTNode::Identifier(_) => {},
+            }
+
+            symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
+            let var_type = symbol_table.get_identifier_type_in_scope(&identifier, &scope_history)?;
+            validate_expression_of_type(&value, &var_type)?;
+        },
 
         _ => {}
     }
@@ -269,7 +335,7 @@ fn semantic_validation_subtree(node:ASTNode, symbol_table:&SymbolTable, scope_hi
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
     for node in root {
-        semantic_validation_subtree(node, symbol_table, &mut vec![0])?;
+        semantic_validation_subtree(&node, symbol_table, &mut vec![0])?;
     }
 
     Ok(())
