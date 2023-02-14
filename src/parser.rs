@@ -96,7 +96,9 @@ pub enum ASTNode {
     Value {
         literal_type: Type,
         value: Literal
-    }
+    },
+
+    Identifier(String)
 }
 
 
@@ -247,15 +249,21 @@ fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 }
 
 
+fn build_ast_from_identifier(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    ASTNode::Identifier(pair.as_str().to_string())
+}
+
+
 /**
  * Takes a `Pair` representing a term and returns it as a subtree of the AST, including children nodes.
  */
 fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
-    let val_or_expr = parent.next().unwrap();
-    let child = match val_or_expr.as_rule() {
-        Rule::value => build_ast_from_value(val_or_expr),
-        Rule::expression => build_ast_from_expression(val_or_expr),
+    let child_token = parent.next().unwrap();
+    let child = match child_token.as_rule() {
+        Rule::value => build_ast_from_value(child_token),
+        Rule::identifier => build_ast_from_identifier(child_token),
+        Rule::expression => build_ast_from_expression(child_token),
         _ => panic!("Could not parse term {:?}", pair.as_str())
     };
 
