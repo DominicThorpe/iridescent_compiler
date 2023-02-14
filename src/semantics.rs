@@ -1,5 +1,5 @@
 use crate::parser::{Type, ASTNode, Mutability};
-use crate::errors::SymbolNotFoundError;
+use crate::errors::*;
 
 use std::error::Error;
 
@@ -172,6 +172,60 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 }
 
 
+fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<dyn Error>> {
+    match node {
+        ASTNode::Term { child } => {
+            match &**child {
+                ASTNode::Expression {..} => {
+                    match validate_statement_of_type( &*child, &required_type ) {
+                        Ok(_) => {},
+                        Err(_) => {
+                            return Err(Box::new(IncorrectDatatype)); 
+                        }
+                    }
+                },
+
+                ASTNode::Value {literal_type, ..} => {
+                    if literal_type == required_type {
+                        return Err(Box::new(IncorrectDatatype));
+                    }
+                },
+
+                _ => panic!("{:?} is not a valid token for semantic analysis of terms.", node)
+            }
+        },
+
+        _ => panic!("{:?} is not a valid token for semantic analysis of terms.", node)
+    };
+
+    Ok(())
+}
+
+
+/**
+ * Takes an expression node and uses recursion to verify that the result of the expression is
+ * semantically valid (i.e. everything is of the same datatype). Will return an Error if this
+ * is not true.
+ */
+fn validate_statement_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<dyn Error>> {
+    match &node {
+        ASTNode::Expression {lhs, rhs, ..} => {
+            validate_term_of_type(lhs, required_type)?;
+            match &rhs {
+                None => {},
+                Some(term) => {
+                    validate_term_of_type(term, required_type)?;
+                }
+            }
+        },
+
+        _ => panic!("{:?} is not an expression", node)
+    };
+
+    Ok(())
+}
+
+
 /**
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
@@ -184,6 +238,10 @@ fn semantic_validation_subtree(node:ASTNode, symbol_table:&SymbolTable, scope_hi
                 scope_history.push(symbol_table.get_identifier_in_scope(&identifier, &scope_history)?);
                 semantic_validation_subtree(statement, &symbol_table, &mut scope_history)?;
             }
+        },
+
+        ASTNode::Expression {..} => {
+            validate_statement_of_type(&node, &Type::Integer)?;
         },
         
         ASTNode::VarAssignStatement {identifier, ..} => {
@@ -206,6 +264,8 @@ fn semantic_validation_subtree(node:ASTNode, symbol_table:&SymbolTable, scope_hi
  * TODO:
  *   - no/incorrect return statements
  *   - reassignment to immutable variable
+ *   - operations on non-matching datatypes
+ *   - invalid-sized literal assignments
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
     for node in root {
