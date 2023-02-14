@@ -224,12 +224,12 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 }
 
 
-fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<dyn Error>> {
+fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
     match node {
         ASTNode::Term { child } => {
             match &**child {
                 ASTNode::Expression {..} => {
-                    match validate_expression_of_type( &*child, &required_type ) {
+                    match validate_expression_of_type(&*child, &required_type, symbol_table, scope_history) {
                         Ok(_) => {},
                         Err(_) => {
                             return Err(Box::new(IncorrectDatatype)); 
@@ -239,6 +239,13 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<d
 
                 ASTNode::Value {literal_type, ..} => {
                     if literal_type != required_type {
+                        return Err(Box::new(IncorrectDatatype));
+                    }
+                },
+
+                ASTNode::Identifier(identifier) => {
+                    println!("Identifier: {} == {:?}", identifier, required_type);
+                    if &symbol_table.get_identifier_type_in_scope(identifier, scope_history)? != required_type {
                         return Err(Box::new(IncorrectDatatype));
                     }
                 },
@@ -259,14 +266,14 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<d
  * semantically valid (i.e. everything is of the same datatype). Will return an Error if this
  * is not true.
  */
-fn validate_expression_of_type(node:&ASTNode, required_type:&Type) -> Result<(), Box<dyn Error>> {
+fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
     match &node {
         ASTNode::Expression {lhs, rhs, ..} => {
-            validate_term_of_type(lhs, required_type)?;
+            validate_term_of_type(lhs, required_type, symbol_table, scope_history)?;
             match &rhs {
                 None => {},
                 Some(term) => {
-                    validate_term_of_type(term, required_type)?;
+                    validate_term_of_type(term, required_type, symbol_table, scope_history)?;
                 }
             }
         },
@@ -287,13 +294,12 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         ASTNode::Function {identifier, statements, return_type} => {
             let mut has_return = false;
             for statement in statements {
-                let mut scope_history = scope_history.clone();
                 scope_history.push(symbol_table.get_identifier_in_scope(&identifier, &scope_history)?);
-                semantic_validation_subtree(statement, &symbol_table, &mut scope_history)?;
+                semantic_validation_subtree(statement, &symbol_table, scope_history)?;
 
                 match statement.clone() {
                     ASTNode::ReturnStatement { expression } => {
-                        validate_expression_of_type(&expression, &return_type)?;
+                        validate_expression_of_type(&expression, &return_type, symbol_table, scope_history)?;
                         has_return = true;
                     },
 
@@ -313,7 +319,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
 
             symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
             let var_type = symbol_table.get_identifier_type_in_scope(&identifier, &scope_history)?;
-            validate_expression_of_type(&value, &var_type)?;
+            validate_expression_of_type(&value, &var_type, symbol_table, scope_history)?;
         },
 
         _ => {}

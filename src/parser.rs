@@ -328,7 +328,7 @@ fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  * children nodes.
  */
 fn build_ast_from_return_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
-    let mut parent = pair.clone().into_inner().next().unwrap().into_inner();
+    let mut parent = pair.clone().into_inner();
     let expression = build_ast_from_expression(parent.next().unwrap());
 
     ASTNode::ReturnStatement {
