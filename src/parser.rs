@@ -24,7 +24,7 @@ pub enum Type {
  */
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Literal {
-    Integer(i64),
+    Integer(i16),
 }
 
 
@@ -241,7 +241,7 @@ fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     match value.as_rule() {
         Rule::int_literal => ASTNode::Value{
             literal_type: Type::Integer, 
-            value: Literal::Integer(get_int_from_str_literal(value.as_str()))
+            value: Literal::Integer(i16::try_from(get_int_from_str_literal(value.as_str())).ok().expect("Could not convert int literal to i16"))
         },
 
         _ => panic!("Could not parse value {:?}", pair.as_str())

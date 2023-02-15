@@ -24,8 +24,8 @@ term = {expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}
 statement = !{var_assign | var_decl | return_stmt | for_loop | loop 
-			| print | if_stmt | function_call ~ ";" 
-                  | "break" ~ ";" | "continue" ~ ";"}
+				| print | if_stmt | function_call ~ ";" 
+                | "break" ~ ";" | "continue" ~ ";"}
 
 loop = {"loop" ~ "{" ~ statement* ~ "}"}
 for_loop = {"for " ~ var_decl ~ "until " ~ (identifier | number) ~ ("step " ~ (identifier | number))? ~ "{" ~ statement* ~ "}"}

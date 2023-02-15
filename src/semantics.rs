@@ -244,7 +244,6 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                 },
 
                 ASTNode::Identifier(identifier) => {
-                    println!("Identifier: {} == {:?}", identifier, required_type);
                     if &symbol_table.get_identifier_type_in_scope(identifier, scope_history)? != required_type {
                         return Err(Box::new(IncorrectDatatype));
                     }
@@ -311,6 +310,10 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                 return Err(Box::new(BadFunctionReturn(identifier.to_string())));
             }
         },
+
+        ASTNode::VarDeclStatement {var_type, value, ..} => {
+            validate_expression_of_type(&value, &var_type, symbol_table, scope_history)?;
+        }
         
         ASTNode::VarAssignStatement {identifier, value} => {
             if symbol_table.get_mutability_in_scope(&identifier, &scope_history)? != Mutability::Mutable {
@@ -335,9 +338,6 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
  *   - no/incorrect return statements
  *   - reassignment to immutable variable
  *   - operations on non-matching datatypes
- * 
- * TODO:
- *   - invalid-sized literal assignments
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
     for node in root {
