@@ -43,6 +43,7 @@ pub enum IntermediateInstr {
 /**
  * Used to map identifiers to address, type pairs
  */
+#[derive(Debug)]
 pub struct AddrTypePair {
     address: usize,
     var_type: Type
@@ -71,6 +72,14 @@ fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
 }
 
 
+/** 
+ * Takes the identifier of a function and a variable and returns a string in the format "__function_variable__"
+ */
+fn get_var_repr(func_id:&str, id:&str) -> String {
+    format!("{}_{}", func_id, id)
+}
+
+
 /**
  * Takes an AST node and returns the intermediate code for it, then calls itself recursively to generate the
  * code of the sub nodes. Adding instructions to instructions vec is done through passing a mutable reference,
@@ -79,35 +88,35 @@ fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
  * Requires the memory map, which maps identifiers to their scope and type, and a primitive type only when
  * handling a function to ensure the correct return type instr.
  */
-fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>, memory_map:&mut HashMap<String, AddrTypePair>, primitive_type:Option<Type>) {
+fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>, memory_map:&mut HashMap<String, AddrTypePair>, primitive_type:Option<Type>, func_name:&str) {
     static NEXT_ADDRESS:AtomicUsize = AtomicUsize::new(0);
     match root {
         ASTNode::Function {identifier, statements, return_type, parameters} => {
             instructions.push(IntermediateInstr::FuncStart(identifier.to_owned()));
 
             for param in parameters {
-                gen_intermediate_code(param, instructions, memory_map, None)
+                gen_intermediate_code(param, instructions, memory_map, None, identifier)
             }
 
             for stmt in statements {
-                gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()));
+                gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()), identifier);
             }
 
             instructions.push(IntermediateInstr::FuncEnd(identifier.to_owned()));
         },
 
         ASTNode::ReturnStatement {expression} => {
-            gen_intermediate_code(expression, instructions, memory_map, None);
+            gen_intermediate_code(expression, instructions, memory_map, None, func_name);
             instructions.push(IntermediateInstr::Return(primitive_type.unwrap()))
         },
 
         ASTNode::VarDeclStatement {identifier, value, var_type, ..} => {
             match &**value {
                 ASTNode::Expression {..} => {
-                    gen_intermediate_code(value, instructions, memory_map, None);
+                    gen_intermediate_code(value, instructions, memory_map, None, func_name);
 
                     let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
-                    memory_map.insert(identifier.to_owned(), AddrTypePair {address: address, var_type: var_type.clone()});
+                    memory_map.insert(get_var_repr(func_name, identifier), AddrTypePair {address: address, var_type: var_type.clone()});
                     instructions.push(IntermediateInstr::Store(var_type.clone(), address));
                 },
                 _ => {}
@@ -117,9 +126,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::VarAssignStatement {identifier, value} => {
             match &**value {
                 ASTNode::Expression {..} => {
-                    gen_intermediate_code(value, instructions, memory_map, None);
+                    gen_intermediate_code(value, instructions, memory_map, None, func_name);
 
-                    let metadata = memory_map.get(identifier).unwrap();
+                    let metadata = memory_map.get(&get_var_repr(func_name, identifier)).unwrap();
                     instructions.push(IntermediateInstr::Store(metadata.var_type.clone(), metadata.address));
                 },
                 _ => {}
@@ -127,10 +136,10 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::Expression {rhs, lhs, operator} => {
-            gen_intermediate_code(&*lhs, instructions, memory_map, None);
+            gen_intermediate_code(&*lhs, instructions, memory_map, None, func_name);
 
             match rhs {
-                Some(rhs) => gen_intermediate_code(rhs, instructions, memory_map, None),
+                Some(rhs) => gen_intermediate_code(rhs, instructions, memory_map, None, func_name),
                 None => {}
             }
 
@@ -140,7 +149,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
         },
 
-        ASTNode::Term {child} => gen_intermediate_code(child, instructions, memory_map, None),
+        ASTNode::Term {child} => gen_intermediate_code(child, instructions, memory_map, None, func_name),
 
         ASTNode::Value {literal_type, value} => {
             let val = match *value {
@@ -150,15 +159,17 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::Identifier(identifier) => {
-            let metadata = memory_map.get(identifier).unwrap();
+            let metadata = memory_map.get(&get_var_repr(func_name, identifier)).unwrap();
             instructions.push(IntermediateInstr::Load(metadata.var_type.clone(), metadata.address));
         },
 
         ASTNode::Parameter {param_type, identifier} => {
             let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
-            memory_map.insert(identifier.to_owned(), AddrTypePair {address: address, var_type: param_type.clone()});
+            memory_map.insert(get_var_repr(func_name, identifier), AddrTypePair {address: address, var_type: param_type.clone()});
         }
     }
+
+    println!("{:#?}", memory_map);
 }
 
 
@@ -170,7 +181,7 @@ pub fn generate_program_intermediate(ast:Vec<ASTNode>) -> Vec<IntermediateInstr>
     let mut instructions = vec![];
     let mut memory_map:HashMap<String, AddrTypePair> = HashMap::new();
     for top_level in ast {
-        gen_intermediate_code(&top_level, &mut instructions, &mut memory_map, None);
+        gen_intermediate_code(&top_level, &mut instructions, &mut memory_map, None, "global");
     }
 
     instructions
