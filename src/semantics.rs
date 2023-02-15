@@ -264,6 +264,12 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                     }
                 },
 
+                ASTNode::FunctionCall {identifier, ..} => {
+                    if &symbol_table.get_identifier_type_in_scope(identifier, &vec![0]).unwrap() != required_type {
+                        return Err(Box::new(IncorrectDatatype));
+                    }
+                },
+
                 _ => panic!("{:?} is not a valid token for semantic analysis of terms.", node)
             }
         },

@@ -110,6 +110,11 @@ pub enum ASTNode {
         value: Literal
     },
 
+    FunctionCall {
+        identifier: String,
+        arguments: Vec<ASTNode>
+    },
+
     Identifier(String)
 }
 
@@ -281,12 +286,40 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let child = match child_token.as_rule() {
         Rule::value => build_ast_from_value(child_token),
         Rule::identifier => build_ast_from_identifier(child_token),
+        Rule::function_call => build_ast_from_function_call(child_token),
         Rule::expression => build_ast_from_expression(child_token),
         _ => panic!("Could not parse term {:?}", pair.as_str())
     };
 
     ASTNode::Term {
         child: Box::new(child)
+    }
+}
+
+
+fn build_ast_from_function_call(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.clone().into_inner();
+    let identifier = parent.next().unwrap().as_str().to_string();
+    let arguments = match parent.next() {
+        Some(args_list) => {
+            let mut parent = args_list.into_inner();
+            let mut args = vec![];
+            while let Some(arg) = parent.next() {
+                args.push(match arg.as_rule() {
+                    Rule::identifier => build_ast_from_identifier(arg),
+                    Rule::value => build_ast_from_value(arg),
+                    _ => panic!("Could not parse argument {:?}", pair.as_str())
+                });
+            }
+
+            args
+        },
+        None => vec![]
+    };
+
+    ASTNode::FunctionCall {
+        identifier: identifier,
+        arguments: arguments
     }
 }
 
@@ -298,12 +331,12 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 fn build_ast_from_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     // get the left hand side of the expression from the first token
     let mut parent = pair.clone().into_inner();
-    let value_or_expr = parent.next().unwrap();
-    let term = match value_or_expr.as_rule() {
-        Rule::term => build_ast_from_term(value_or_expr),
+    let child = parent.next().unwrap();
+    let term = match child.as_rule() {
+        Rule::term => build_ast_from_term(child),
         Rule::value => {
             ASTNode::Term {
-                child: Box::new(build_ast_from_value(value_or_expr))
+                child: Box::new(build_ast_from_value(child))
             }
         },
         _ => panic!("Could not parse expression {:?}", pair.as_str())

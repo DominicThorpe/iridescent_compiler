@@ -13,14 +13,14 @@ value = {string | char | float | int_literal}
 
 parameter = ${primitive_type ~ WHITESPACE+ ~ identifier}
 param_list = {((parameter ~ ",")* ~ parameter)}
-value_list = {((value ~ ",")* ~ value)}
+value_list = {(((identifier | value) ~ ",")* ~ (identifier | value))}
 function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ "{" ~ statement* ~ "}"}
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
 print = {"print" ~ ((identifier | value ) ~ ",")* ~ (identifier | value) ~ ";"}
 binary_operator = {("+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<")}
 unary_operator = {"~" | "!" | "-"}
-term = {expression | identifier | value}
+term = {function_call | expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}
 statement = !{var_assign | var_decl | return_stmt | for_loop | loop 

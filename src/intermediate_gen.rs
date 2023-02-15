@@ -1,5 +1,6 @@
 use crate::parser::*;
 
+use std::fmt;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -31,12 +32,22 @@ pub enum IntermediateInstr {
     LeftShiftArithmetic,
     RightShiftLogical,
     NumNeg,
+    Call(String),
     Push(Type, Argument),
     Load(Type, usize),
     Store(Type, usize),
     Return(Type),
     FuncStart(String),
     FuncEnd(String),
+}
+
+impl fmt::Display for IntermediateInstr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            IntermediateInstr::FuncStart(_) => write!(f, "\n\n{:?}", self),
+            _ => write!(f, "{:?}", self)
+        }
+    }
 }
 
 
@@ -166,10 +177,16 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::Parameter {param_type, identifier} => {
             let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
             memory_map.insert(get_var_repr(func_name, identifier), AddrTypePair {address: address, var_type: param_type.clone()});
+        },
+
+        ASTNode::FunctionCall {identifier, arguments} => {
+            for arg in arguments {
+                gen_intermediate_code(arg, instructions, memory_map, None, func_name);
+            }
+
+            instructions.push(IntermediateInstr::Call(identifier.to_string()));
         }
     }
-
-    println!("{:#?}", memory_map);
 }
 
 
