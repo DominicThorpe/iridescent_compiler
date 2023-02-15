@@ -82,8 +82,12 @@ fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
 fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>, memory_map:&mut HashMap<String, AddrTypePair>, primitive_type:Option<Type>) {
     static NEXT_ADDRESS:AtomicUsize = AtomicUsize::new(0);
     match root {
-        ASTNode::Function {identifier, statements, return_type} => {
+        ASTNode::Function {identifier, statements, return_type, parameters} => {
             instructions.push(IntermediateInstr::FuncStart(identifier.to_owned()));
+
+            for param in parameters {
+                gen_intermediate_code(param, instructions, memory_map, None)
+            }
 
             for stmt in statements {
                 gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()));
@@ -148,6 +152,11 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::Identifier(identifier) => {
             let metadata = memory_map.get(identifier).unwrap();
             instructions.push(IntermediateInstr::Load(metadata.var_type.clone(), metadata.address));
+        },
+
+        ASTNode::Parameter {param_type, identifier} => {
+            let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
+            memory_map.insert(identifier.to_owned(), AddrTypePair {address: address, var_type: param_type.clone()});
         }
     }
 }

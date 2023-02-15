@@ -70,7 +70,13 @@ pub enum ASTNode {
     Function {
         return_type: Type,
         identifier: String,
+        parameters: Vec<ASTNode>,
         statements: Vec<ASTNode>
+    },
+
+    Parameter {
+        param_type: Type,
+        identifier: String
     },
 
     ReturnStatement {
@@ -410,13 +416,39 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
 
 /**
+ * Takes a `Pair` representing a parameter and returns it as a subtree of the AST, including children nodes.
+ */
+fn build_ast_from_param(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut param = pair.into_inner();
+    let param_type = get_type_from_string(param.next().unwrap().as_str());
+    let param_identifier = param.next().unwrap().as_str().to_owned();
+    ASTNode::Parameter {
+        param_type: param_type,
+        identifier: param_identifier
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a function and returns it as a subtree of the AST, including children nodes.
  */
 fn build_ast_from_function(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.into_inner();
     let return_type = get_type_from_string(parent.next().unwrap().as_str());
     let identifier = parent.next().unwrap().as_str().to_owned();
+    let mut parameters = vec![];
     let mut statements = vec![];
+
+    match parent.peek().unwrap().as_rule() {
+        Rule::param_list => {
+            let mut param_list_parent = parent.next().unwrap().into_inner();
+            while let Some(param) = param_list_parent.next() {
+                parameters.push(build_ast_from_param(param));
+            }
+        },
+
+        _ => {}
+    }
 
     while let Some(statement) = parent.next() {
         statements.push(build_ast_from_statement(statement));
@@ -425,6 +457,7 @@ fn build_ast_from_function(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     ASTNode::Function {
         return_type: return_type,
         identifier: identifier,
+        parameters: parameters,
         statements: statements
     }
 }

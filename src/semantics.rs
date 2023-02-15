@@ -191,7 +191,7 @@ impl SymbolTableRow {
  */
 fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>) {
     match subtree.clone() {
-        ASTNode::Function {return_type, identifier, statements} => {
+        ASTNode::Function {return_type, identifier, statements, parameters} => {
             let scope_id = table.get_next_scope_id();
             let function_row = SymbolTableRow::Function {
                 identifier: identifier,
@@ -201,11 +201,26 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             };
             table.add(function_row.clone());
 
+            for param in parameters {
+                generate_sub_symbol_table(param, table, Some(function_row.clone()));
+            }
 
             for statement in statements {
                 generate_sub_symbol_table(statement, table, Some(function_row.clone()));
             }
         },
+
+        ASTNode::Parameter {param_type, identifier} => {
+            table.add(
+                SymbolTableRow::Variable {
+                    identifier: identifier,
+                    primitive_type: param_type,
+                    mutability: Mutability::Constant,
+                    parent_scope: parent.clone().unwrap().get_scope_id(),
+                    parent: Box::new(parent.expect(&format!("Statement {:?} does not have a parent.", subtree)))
+                }
+            )
+        }
 
         ASTNode::VarDeclStatement {var_type, mutability, identifier, ..} => {
             table.add(
@@ -290,7 +305,7 @@ fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:
  */
 fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
     match node {
-        ASTNode::Function {identifier, statements, return_type} => {
+        ASTNode::Function {identifier, statements, return_type, ..} => {
             let mut has_return = false;
             for statement in statements {
                 scope_history.push(symbol_table.get_identifier_in_scope(&identifier, &scope_history)?);

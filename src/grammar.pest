@@ -11,7 +11,7 @@ primitive_type = @{("string" | "char" | "int" | "float" | "void" | "long" | "dou
 identifier = @{(ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
 value = {string | char | float | int_literal}
 
-parameter = @{primitive_type ~ WHITESPACE+ ~ identifier}
+parameter = ${primitive_type ~ WHITESPACE+ ~ identifier}
 param_list = {((parameter ~ ",")* ~ parameter)}
 value_list = {((value ~ ",")* ~ value)}
 function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ "{" ~ statement* ~ "}"}
