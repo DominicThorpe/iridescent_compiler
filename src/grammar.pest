@@ -18,8 +18,8 @@ function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ 
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
 print = {"print" ~ ((identifier | value ) ~ ",")* ~ (identifier | value) ~ ";"}
-binary_operator = {("+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>" | ">>>" | "<<")}
-unary_operator = {"~" | "!" | "-" | "++" | "--"}
+binary_operator = {("+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<")}
+unary_operator = {"~" | "!" | "-"}
 term = {expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}

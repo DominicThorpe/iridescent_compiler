@@ -94,6 +94,12 @@ Expressions are chains of actions or simple identifiers or values which statemen
     - subtraction (-)
     - multiplication (*)
     - division (/)
+    - logical AND (&)
+    - logical OR (|)
+    - logical XOR (^)
+    - right logical shift (>>)
+    - left logical shift (<<)
+    - right arithmetic shift (>>>)
 
   - unary (takes 1 argument):
     - complement (~)
@@ -103,17 +109,6 @@ Expressions are chains of actions or simple identifiers or values which statemen
 The following are planned:
   - function calls
 
-  - binary (takes 2 arguments):
-    - logical AND (&)
-    - logical OR (|)
-    - logical XOR (^)
-    - right logical shift (>>)
-    - left logical shift (<<)
-    - right arithmetic shift (>>>)
-
-  - unary (takes 1 argument)
-    - increment (++)
-    - decrement (--)
 
 ## How it Works
 

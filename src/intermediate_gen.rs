@@ -22,8 +22,14 @@ pub enum IntermediateInstr {
     Sub,
     Div,
     Mult,
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
     Complement,
     LogicNeg,
+    LeftShiftLogical,
+    LeftShiftArithmetic,
+    RightShiftLogical,
     NumNeg,
     Push(Type, Argument),
     Load(Type, usize),
@@ -55,6 +61,12 @@ fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
         Operator::Complement => IntermediateInstr::Complement,
         Operator::NegateNumerical => IntermediateInstr::NumNeg,
         Operator::NegateLogical => IntermediateInstr::LogicNeg,
+        Operator::And => IntermediateInstr::BitwiseAnd,
+        Operator::Or => IntermediateInstr::BitwiseOr,
+        Operator::XOr => IntermediateInstr::BitwiseXor,
+        Operator::LeftShiftLogical => IntermediateInstr::LeftShiftLogical,
+        Operator::LeftShiftArithmetic => IntermediateInstr::LeftShiftArithmetic,
+        Operator::RightShiftLogical => IntermediateInstr::RightShiftLogical
     }
 }
 

@@ -39,7 +39,13 @@ pub enum Operator {
     Addition,
     Subtraction,
     Multiplication,
-    Division
+    Division,
+    And,
+    Or,
+    XOr,
+    LeftShiftLogical,
+    LeftShiftArithmetic,
+    RightShiftLogical
 }
 
 
@@ -151,6 +157,12 @@ fn get_binary_operator_from_str(operator_str:&str) -> Operator {
         "-" => Operator::Subtraction,
         "*" => Operator::Multiplication,
         "/" => Operator::Division,
+        "&" => Operator::And,
+        "|" => Operator::Or,
+        "^" => Operator::XOr,
+        ">>" => Operator::LeftShiftLogical,
+        ">>>" => Operator::LeftShiftArithmetic,
+        "<<" => Operator::RightShiftLogical,
         _ => panic!("Unknown operator {}", operator_str)
     }
 }
