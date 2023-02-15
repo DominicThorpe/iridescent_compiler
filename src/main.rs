@@ -10,7 +10,7 @@ extern crate pest_derive;
 fn main() {
     let filename = "idk.iri";
     let ast = parser::parse(filename).unwrap();
-    println!("{:#?}", ast);
+    // println!("{:#?}", ast);
     let symbol_table = semantics::generate_symbol_table(ast.clone());
     // println!("{:#?}", symbol_table);
     semantics::semantic_validation(ast.clone(), &symbol_table).unwrap();

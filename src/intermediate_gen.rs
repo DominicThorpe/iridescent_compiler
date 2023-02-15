@@ -82,6 +82,18 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
         },
 
+        ASTNode::VarAssignStatement {identifier, value} => {
+            match &**value {
+                ASTNode::Expression {..} => {
+                    gen_intermediate_code(value, instructions, memory_map, symbol_table, None);
+
+                    let metadata = memory_map.get(identifier).unwrap();
+                    instructions.push(IntermediateInstr::Store(metadata.var_type.clone(), metadata.address));
+                },
+                _ => {}
+            }
+        },
+
         ASTNode::Expression {rhs, lhs, operator} => {
             gen_intermediate_code(&*lhs, instructions, memory_map, symbol_table, None);
 
@@ -109,8 +121,6 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             let metadata = memory_map.get(identifier).unwrap();
             instructions.push(IntermediateInstr::Load(metadata.var_type.clone(), metadata.address));
         }
-
-        _ => {}
     }
 }
 
