@@ -14,7 +14,7 @@ fn main() {
     let symbol_table = semantics::generate_symbol_table(ast.clone());
     // println!("{:#?}", symbol_table);
     semantics::semantic_validation(ast.clone(), &symbol_table).unwrap();
-    let instructions = intermediate_gen::generate_program_intermediate(ast, &symbol_table);
+    let instructions = intermediate_gen::generate_program_intermediate(ast);
 
     for instr in instructions {
         println!("{:?}", instr);
