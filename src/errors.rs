@@ -24,6 +24,17 @@ impl fmt::Display for IncorrectDatatype {
 
 
 #[derive(Debug)]
+pub struct IncorrectNumArguments(pub String);
+impl Error for IncorrectNumArguments {}
+
+impl fmt::Display for IncorrectNumArguments {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Incorrect number of arguments detected for function {}.", self.0)
+    }
+}
+
+
+#[derive(Debug)]
 pub struct BadFunctionReturn(pub String);
 impl Error for BadFunctionReturn {}
 

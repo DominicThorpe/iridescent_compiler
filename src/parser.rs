@@ -443,6 +443,7 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>) -> ASTNode {
         Rule::return_stmt => build_ast_from_return_stmt(pair),
         Rule::var_decl => build_ast_from_var_decl_stmt(pair),
         Rule::var_assign => build_ast_from_var_assign_stmt(pair),
+        Rule::function_call => build_ast_from_function_call(pair.into_inner().next().unwrap()),
         _ => panic!("Could not parse statement {:?}", pair.as_str())
     }
 }

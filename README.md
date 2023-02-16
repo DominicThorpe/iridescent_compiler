@@ -89,6 +89,8 @@ In the future, the following shall also be supported:
 ### Expressions
 
 Expressions are chains of actions or simple identifiers or values which statements are performed on. For example, doing ((3, 4)+, 2)- is an expression. Mostly expressions involve doing mathematics (currently implemented), or calling functions (planned), or both. The following are currently supported expression operations:
+  - function calls
+
   - binary (takes 2 arguments):
     - addition (+)
     - subtraction (-)
@@ -106,9 +108,6 @@ Expressions are chains of actions or simple identifiers or values which statemen
     - numerical negation (-)
     - logical negation (!)
 
-The following are planned:
-  - function calls
-
 
 ## How it Works
 
@@ -123,4 +122,4 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on adding the remaining operators to the language up to the intermediiate code generation phase.
+Currently working on adding function calls to the language up to the intermediiate code generation phase.

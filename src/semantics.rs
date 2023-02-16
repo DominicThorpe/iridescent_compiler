@@ -90,6 +90,29 @@ impl SymbolTable {
 
         Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
     }
+
+
+    /**
+     * Takes an identifier of a function and returns a vector of the types of the parameters of that function. Returns
+     * an error if the identifier was not found or was a variable.
+     */
+    fn get_function_param_types(&self, identifier:&String) -> Result<Vec<Type>, Box<dyn Error>> {
+        for row in &self.rows {
+            if &row.get_identifier() == identifier {
+                match row {
+                    SymbolTableRow::Variable {..} => {
+                        return Err(Box::new(IncorrectDatatype))
+                    },
+                    
+                    SymbolTableRow::Function {parameters, ..} => {
+                        return Ok(parameters.clone())
+                    }
+                }
+            }
+        }
+
+        Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
+    }
 }
 
 
@@ -110,6 +133,7 @@ pub enum SymbolTableRow {
     Function {
         identifier: String,
         return_type: Type,
+        parameters: Vec<Type>,
         scope: usize,
         parent_scope: usize
     }
@@ -180,7 +204,7 @@ impl SymbolTableRow {
             SymbolTableRow::Function {identifier, ..} => identifier.to_string(),
             SymbolTableRow::Variable {parent, ..} => parent.get_identifier().to_string()
         }
-    } 
+    }
 }
 
 
@@ -192,10 +216,18 @@ impl SymbolTableRow {
 fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>) {
     match subtree.clone() {
         ASTNode::Function {return_type, identifier, statements, parameters} => {
+            let param_types = parameters.clone().into_iter().map(|param| {
+                match param {
+                    ASTNode::Parameter {param_type, ..} => param_type,
+                    unknown => panic!("{:?} is not a valid parameter in function call {}", unknown, identifier) 
+                }
+            }).collect();
+
             let scope_id = table.get_next_scope_id();
             let function_row = SymbolTableRow::Function {
                 identifier: identifier,
                 return_type: return_type,
+                parameters: param_types,
                 parent_scope: 0,
                 scope: scope_id
             };
@@ -323,6 +355,28 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                         has_return = true;
                     },
 
+                    ASTNode::FunctionCall {identifier, arguments} => {
+                        let param_types = symbol_table.get_function_param_types(&identifier)?;
+                        let arg_types:Vec<Type> = arguments.into_iter().map(|param|
+                            match param {
+                                ASTNode::Value {literal_type, ..} => literal_type, 
+                                ASTNode::Identifier(identifier) => symbol_table.get_identifier_type_in_scope(&identifier, scope_history).unwrap(),
+                                unknown => panic!("{:?} is not a valid parameter in function call {}", unknown, identifier) 
+                            }
+                        ).collect();
+
+                        if arg_types.len() != param_types.len() {
+                            return Err(Box::new(IncorrectNumArguments(identifier)));
+                        }
+
+                        for i in 0..arg_types.len() {
+                            println!("{}: {:?} == {:?}", i, param_types[i], arg_types[i]);
+                            if param_types[i] != arg_types[i] {
+                                return Err(Box::new(IncorrectDatatype));
+                            }
+                        }
+                    }
+
                     _ => {}
                 }
             }
@@ -359,6 +413,8 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
  *   - no/incorrect return statements
  *   - reassignment to immutable variable
  *   - operations on non-matching datatypes
+ *   - functions with incorrect return types
+ *   - incorrect arguments to function calls
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
     for node in root {
