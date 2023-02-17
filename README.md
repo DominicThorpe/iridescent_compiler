@@ -122,4 +122,4 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on adding function calls to the language up to the intermediiate code generation phase.
+Currently working on adding if-else if-else statements to the language up to the intermediate code generation phase.

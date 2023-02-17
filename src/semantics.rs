@@ -370,7 +370,6 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                         }
 
                         for i in 0..arg_types.len() {
-                            println!("{}: {:?} == {:?}", i, param_types[i], arg_types[i]);
                             if param_types[i] != arg_types[i] {
                                 return Err(Box::new(IncorrectDatatype));
                             }

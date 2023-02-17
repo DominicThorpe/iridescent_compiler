@@ -24,20 +24,25 @@ term = {function_call | expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}
 statement = !{var_assign | var_decl | return_stmt | for_loop | loop 
-				| print | if_stmt | function_call ~ ";" 
+				| print | if_structure | function_call ~ ";" 
                 | "break" ~ ";" | "continue" ~ ";"}
 
 loop = {"loop" ~ "{" ~ statement* ~ "}"}
-for_loop = {"for " ~ var_decl ~ "until " ~ (identifier | number) ~ ("step " ~ (identifier | number))? ~ "{" ~ statement* ~ "}"}
+for_loop = {"for " ~ primitive_type ~ identifier ~ "=" ~ (identifier | value) ~ "until " ~ boolean_expr ~ "do" ~ expression ~ "{" ~ statement* ~ "}"}
 
-boolean_binary_operator = {"==" | "!=" | ">" | "<" | ">=" | "<=" | "or" | "and"}
+boolean_binary_operator = {"==" | "!=" | ">=" | "<=" | ">" | "<"}
+boolean_connector = {"&&" | "||"}
 boolean_unary_operator = {"!"}
-boolean_expr = {"(" ~ (boolean_expr | term) ~ "," ~ (boolean_expr | term) ~ ")" ~ boolean_binary_operator
-			| "(" ~ (boolean_expr | term) ~ ")" ~ boolean_unary_operator}
-if = {"if" ~ boolean_expr ~ "{" ~ statement* ~ "}"}
-else_if = {"else" ~ "if" ~ boolean_expr ~ "{" ~ statement* ~ "}"}
-else = {"else" ~ "{" ~ statement* ~ "}"}
-if_stmt = {if ~ else_if* ~ else?}
+boolean_term = {"(" ~ boolean_term ~ "," ~ boolean_term ~ ")" ~ boolean_binary_operator
+				| "(" ~ boolean_term ~ ")" ~ boolean_unary_operator
+                | term}
+boolean_expr = {"(" ~ boolean_expr ~ "," ~ boolean_expr ~ ")" ~ boolean_connector
+				| "(" ~ boolean_expr ~ ")" ~ boolean_unary_operator
+                | boolean_term}
+if_stmt = {"if" ~ boolean_expr ~ "{" ~ statement* ~ "}"}
+elif_stmt = {"else" ~ "if" ~ boolean_expr ~ "{" ~ statement* ~ "}"}
+else_stmt = {"else" ~ "{" ~ statement* ~ "}"}
+if_structure = {if_stmt ~ elif_stmt* ~ else_stmt?}
 
 mutability_mod = {("mut" | "const")}
 var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (expression | term) ~ ";"}
