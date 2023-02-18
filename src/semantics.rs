@@ -232,7 +232,7 @@ impl SymbolTableRow {
  */
 fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>) {
     match subtree.clone() {
-        ASTNode::Function {return_type, identifier, statements, parameters} => {
+        ASTNode::Function {return_type, identifier, statements, parameters, scope} => {
             let param_types = parameters.clone().into_iter().map(|param| {
                 match param {
                     ASTNode::Parameter {param_type, ..} => param_type,
@@ -240,13 +240,12 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
                 }
             }).collect();
 
-            let scope_id = table.get_next_scope_id();
             let function_row = SymbolTableRow::Function {
                 identifier: identifier,
                 return_type: return_type,
                 parameters: param_types,
                 parent_scope: 0,
-                scope: scope_id
+                scope: scope
             };
             table.add(function_row.clone());
 
@@ -289,14 +288,14 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             }
         },
 
-        ASTNode::IfStatement {statements, ..} => {
+        ASTNode::IfStatement {statements, scope, ..} => {
             let scope_id = table.get_next_scope_id();
             let parent_struct = parent.clone().unwrap();
             table.add(
                 SymbolTableRow::ScopeBlock {
                     identifier: format!("{}_{}", parent_struct.get_identifier(), scope_id),
                     parent_scope: parent_struct.get_scope_id(),
-                    scope: scope_id,
+                    scope: scope,
                     parent: Box::new(parent_struct)
                 }
             );

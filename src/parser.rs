@@ -99,7 +99,8 @@ pub enum ASTNode {
         return_type: Type,
         identifier: String,
         parameters: Vec<ASTNode>,
-        statements: Vec<ASTNode>
+        statements: Vec<ASTNode>,
+        scope: usize
     },
 
     Parameter {
@@ -162,10 +163,45 @@ pub enum ASTNode {
 
     IfStatement {
         condition: Box<ASTNode>,
-        statements: Vec<ASTNode>
+        statements: Vec<ASTNode>,
+        scope: usize
     },
 
     Identifier(String)
+}
+
+
+#[derive(Debug, Clone)]
+struct Symbol {
+    scope: usize,
+}
+
+
+#[derive(Debug)]
+struct SymbolTable {
+    entries: Vec<Symbol>
+}
+
+impl SymbolTable {
+    fn get_next_scope_id(&self) -> usize {
+        let mut next:usize = 1;
+        for symbol in &self.entries {
+            if symbol.scope >= next {
+                next = symbol.scope + 1;
+            }
+        }
+
+        next
+    }
+
+    fn add(&mut self, scope_id:Option<usize>) -> usize {
+        let scope_id = scope_id.unwrap_or(self.get_next_scope_id());
+        self.entries.push(Symbol {
+            scope: scope_id,
+        });
+
+        scope_id
+    }
 }
 
 
@@ -653,18 +689,20 @@ fn build_ast_from_boolean_expression(pair: pest::iterators::Pair<Rule>) -> ASTNo
  * Takes a `Pair` representing an if statement and returns it as a subtree of the AST, including 
  * children nodes.
  */
-fn build_ast_from_if_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+fn build_ast_from_if_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
     let mut parent = pair.into_inner();
     let boolean_expr = build_ast_from_boolean_expression(parent.next().unwrap());
 
     let mut statements = vec![];
     while let Some(statement) = parent.next() {
-        statements.push(build_ast_from_statement(statement));
+        statements.push(build_ast_from_statement(statement, symbol_table));
     }
 
+    let scope = symbol_table.add(None);
     ASTNode::IfStatement {
         condition: Box::new(boolean_expr),
-        statements: statements
+        statements: statements,
+        scope: scope
     }
 }
 
@@ -673,12 +711,12 @@ fn build_ast_from_if_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode {
  * Takes a `Pair` representing an if-else-if-else statement and returns it as a subtree of the AST, 
  * including children nodes.
  */
-fn build_ast_from_if_structure(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+fn build_ast_from_if_structure(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
     let mut parent = pair.clone().into_inner();
     let mut statements = vec![];
     while let Some(token) = parent.next() {
         statements.push(match token.as_rule() {
-            Rule::if_stmt => build_ast_from_if_stmt(token),
+            Rule::if_stmt => build_ast_from_if_stmt(token, symbol_table),
             Rule::elif_stmt => todo!(),
             Rule::else_stmt => todo!(),
             unknown => panic!("Invalid token for if statement: {:?}", unknown)
@@ -694,14 +732,14 @@ fn build_ast_from_if_structure(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 /**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
-fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
     let mut parent = pair.clone().into_inner();
     let token = parent.next().unwrap();
     match token.as_rule() {
         Rule::return_stmt => build_ast_from_return_stmt(pair),
         Rule::var_decl => build_ast_from_var_decl_stmt(pair),
         Rule::var_assign => build_ast_from_var_assign_stmt(pair),
-        Rule::if_structure => build_ast_from_if_structure(pair.into_inner().next().unwrap()),
+        Rule::if_structure => build_ast_from_if_structure(pair.into_inner().next().unwrap(), symbol_table),
         Rule::function_call => build_ast_from_function_call(pair.into_inner().next().unwrap()),
         _ => panic!("Could not parse statement {:?}", pair.as_str())
     }
@@ -725,7 +763,7 @@ fn build_ast_from_param(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 /**
  * Takes a `Pair` representing a function and returns it as a subtree of the AST, including children nodes.
  */
-fn build_ast_from_function(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+fn build_ast_from_function(pair: pest::iterators::Pair<Rule>, symbol_table:&mut SymbolTable) -> ASTNode {
     let mut parent = pair.into_inner();
     let return_type = get_type_from_string(parent.next().unwrap().as_str());
     let identifier = parent.next().unwrap().as_str().to_owned();
@@ -743,15 +781,17 @@ fn build_ast_from_function(pair: pest::iterators::Pair<Rule>) -> ASTNode {
         _ => {}
     }
 
+    let scope = symbol_table.add(None);
     while let Some(statement) = parent.next() {
-        statements.push(build_ast_from_statement(statement));
+        statements.push(build_ast_from_statement(statement, symbol_table));
     }
 
     ASTNode::Function {
         return_type: return_type,
         identifier: identifier,
         parameters: parameters,
-        statements: statements
+        statements: statements,
+        scope: scope
     }
 }
 
@@ -768,10 +808,11 @@ pub fn parse(filename:&str) -> Result<Vec<ASTNode>, Box::<dyn Error>> {
     // get the pairs and skip the program node
     let pairs = IridescentParser::parse(Rule::program, program_text.as_str())?
                                         .next().unwrap().into_inner();
+    let mut symbol_table = SymbolTable {entries: vec![]};
     for pair in pairs {
         match pair.as_rule() {
             Rule::function_decl => {
-                ast.push(build_ast_from_function(pair));
+                ast.push(build_ast_from_function(pair, &mut symbol_table));
             },
 
             _ => {}
