@@ -48,6 +48,30 @@ x = 9;
 ```
 
 
+### If, Else if, Else Statements
+
+If-Else-If-Else (IEIE) is used to branch when a given condition is true. They are in the form:
+```
+if (condition) {
+    statements
+}
+
+else if (condition) {
+    statements
+}
+
+else {
+    statements
+}
+```
+
+There can be any number of else if blocks in the IEIE structure, and at most 1 else block, which is the only one not to have a condition, and it must come at the end. The condiitons are boolean expressions, such as `((x, y)>, (y, (z)!)==)&&`. Note that boolean expressions can only be used in conditions and not in assignment (use ternary statements for that) and boolean connectives can only be used outside of boolean terms, so `((x, y)==, (y,z)>)&&` is valid but `((x,y)&&, 3)>` is not. Boolean NOT `!` can be used on both boolean expressions and terms.
+
+Currently supported boolean operations are: `!`, `>`, `>=`, `<`, `<=`, `==`, `!=`.
+
+Currently supported boolean connectors are: `&&`, `||`, `^^` (XOR).
+
+
 ## Current and Planned Features
 
 ### Functions
@@ -70,6 +94,7 @@ Currently, the only supported control structure is the function, however, I plan
   - for loops, 
   - indefinite loops (from which shall come while loops using `break`),
   - if-else if-else structures
+  - ternary structures
 
 These shall function much the same as their equivalents in C. I may also add a proper while loop.
 

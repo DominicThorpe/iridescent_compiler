@@ -103,6 +103,10 @@ impl SymbolTable {
                     SymbolTableRow::Variable {..} => {
                         return Err(Box::new(IncorrectDatatype))
                     },
+
+                    SymbolTableRow::ScopeBlock {..} => {
+                        return Err(Box::new(IncorrectDatatype))
+                    },
                     
                     SymbolTableRow::Function {parameters, ..} => {
                         return Ok(parameters.clone())
@@ -136,6 +140,13 @@ pub enum SymbolTableRow {
         parameters: Vec<Type>,
         scope: usize,
         parent_scope: usize
+    },
+
+    ScopeBlock {
+        identifier: String,
+        scope: usize,
+        parent_scope: usize,
+        parent: Box<SymbolTableRow>
     }
 }
 
@@ -146,7 +157,8 @@ impl SymbolTableRow {
     fn get_identifier(&self) -> String {
         match self {
             SymbolTableRow::Function {identifier, ..} => identifier.to_string(),
-            SymbolTableRow::Variable {identifier, ..} => identifier.to_string()
+            SymbolTableRow::Variable {identifier, ..} => identifier.to_string(),
+            SymbolTableRow::ScopeBlock {identifier, ..} => identifier.to_string(),
         }
     }
 
@@ -157,7 +169,8 @@ impl SymbolTableRow {
     fn get_scope_id(&self) -> usize {
         match self {
             SymbolTableRow::Function {scope, ..} => *scope,
-            SymbolTableRow::Variable {parent_scope, ..} => *parent_scope
+            SymbolTableRow::Variable {parent_scope, ..} => *parent_scope,
+            SymbolTableRow::ScopeBlock {scope, ..} => *scope
         }
     }
 
@@ -168,7 +181,8 @@ impl SymbolTableRow {
     fn get_scope_type(&self) -> Type {
         match self {
             SymbolTableRow::Function {return_type, ..} => return_type.clone(),
-            SymbolTableRow::Variable {primitive_type, ..} => primitive_type.clone()
+            SymbolTableRow::Variable {primitive_type, ..} => primitive_type.clone(),
+            SymbolTableRow::ScopeBlock {..} => panic!("Cannot get type of scope block"),
         }
     }
 
@@ -179,7 +193,8 @@ impl SymbolTableRow {
     fn get_mutability(&self) -> Mutability {
         match self {
             SymbolTableRow::Function {..} => Mutability::Constant,
-            SymbolTableRow::Variable {mutability, ..} => mutability.clone()
+            SymbolTableRow::Variable {mutability, ..} => mutability.clone(),
+            SymbolTableRow::ScopeBlock {..} => panic!("Cannot get mutability of scope block"),
         }
     }
 
@@ -190,7 +205,8 @@ impl SymbolTableRow {
     fn get_parent_scope_id(&self) -> usize {
         match self {
             SymbolTableRow::Function {parent_scope, ..} => *parent_scope,
-            SymbolTableRow::Variable {parent_scope, ..} => *parent_scope
+            SymbolTableRow::Variable {parent_scope, ..} => *parent_scope,
+            SymbolTableRow::ScopeBlock {parent_scope, ..} => *parent_scope
         }
     }
 
@@ -201,8 +217,9 @@ impl SymbolTableRow {
      */
     fn get_parent_identifier(&self) -> String {
         match self {
-            SymbolTableRow::Function {identifier, ..} => identifier.to_string(),
-            SymbolTableRow::Variable {parent, ..} => parent.get_identifier().to_string()
+            SymbolTableRow::Function {..} => "global".to_string(),
+            SymbolTableRow::Variable {parent, ..} => parent.get_identifier().to_string(),
+            SymbolTableRow::ScopeBlock {parent, ..} => parent.get_identifier().to_string(),
         }
     }
 }
@@ -266,11 +283,37 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             )
         },
 
+        ASTNode::IfElifElseStatement {statements} => {
+            for statement in statements {
+                generate_sub_symbol_table(statement, table, parent.clone());
+            }
+        },
+
+        ASTNode::IfStatement {statements, ..} => {
+            let scope_id = table.get_next_scope_id();
+            let parent_struct = parent.clone().unwrap();
+            table.add(
+                SymbolTableRow::ScopeBlock {
+                    identifier: format!("{}_{}", parent_struct.get_identifier(), scope_id),
+                    parent_scope: parent_struct.get_scope_id(),
+                    scope: scope_id,
+                    parent: Box::new(parent_struct)
+                }
+            );
+
+            for statement in statements {
+                generate_sub_symbol_table(statement, table, parent.clone());
+            }
+        },
+
         _ => {}
     };
 }
 
 
+/**
+ * Verifies that the given expression node has a child of the correct type
+ */
 fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
     match node {
         ASTNode::Term { child } => {
@@ -315,18 +358,30 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
 
 /**
  * Takes an expression node and uses recursion to verify that the result of the expression is
- * semantically valid (i.e. everything is of the same datatype). Will return an Error if this
- * is not true.
+ * semantically valid (i.e. everything is of the same datatype and datatype is valid for the 
+ * operation) - otherwise will return an Error.
  */
 fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
     match &node {
-        ASTNode::Expression {lhs, rhs, ..} => {
+        ASTNode::Expression {lhs, rhs, operator} => {
             validate_term_of_type(lhs, required_type, symbol_table, scope_history)?;
             match &rhs {
                 None => {},
                 Some(term) => {
                     validate_term_of_type(term, required_type, symbol_table, scope_history)?;
                 }
+            }
+
+            // check that operator arg types are valid for operator (e.g. cannot do true - false or "hello" / "world")
+            // we already have validated that the args are the "required_type"
+            match operator {
+                None => {},
+                Some(op) => {
+                    match required_type {
+                        Type::Boolean => panic!("{:?} is not a valid operator for arguments of type {:?}", op, required_type),
+                        _ => {}
+                    }
+                } 
             }
         },
 
@@ -399,6 +454,20 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             validate_expression_of_type(&value, &var_type, symbol_table, scope_history)?;
         },
 
+        ASTNode::IfElifElseStatement {statements} => {
+            for statement in statements {
+                match statement {
+                    ASTNode::IfStatement {statements, ..}=> {
+                        for sub_stmt in statements {
+                            semantic_validation_subtree(sub_stmt, symbol_table, scope_history).unwrap();
+                        }
+                    },
+
+                    _ => panic!("Invalid block if if, else if, else structure {:?}", statement)
+                }
+            }
+        }
+
         _ => {}
     }
 
@@ -414,6 +483,10 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
  *   - operations on non-matching datatypes
  *   - functions with incorrect return types
  *   - incorrect arguments to function calls
+ * 
+ * TODO:
+ *   - check scope of if-else statements
+ *   - check validity of boolean statements
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
     for node in root {
