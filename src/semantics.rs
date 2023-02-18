@@ -1,4 +1,4 @@
-use crate::parser::{Type, ASTNode, Mutability};
+use crate::ast::*;
 use crate::errors::*;
 
 use std::error::Error;

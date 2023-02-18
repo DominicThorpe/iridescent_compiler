@@ -1,6 +1,7 @@
 mod parser;
 mod semantics;
 mod errors;
+mod ast;
 // mod intermediate_gen;
 
 extern crate pest;
