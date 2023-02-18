@@ -15,7 +15,8 @@ pub struct IridescentParser;
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Type {
     Void,
-    Integer
+    Integer,
+    Boolean
 }
 
 
@@ -25,6 +26,7 @@ pub enum Type {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Literal {
     Integer(i16),
+    Boolean(bool)
 }
 
 
@@ -179,6 +181,7 @@ fn get_type_from_string(type_str:&str) -> Type {
     match type_str {
         "void" => Type::Void,
         "int" => Type::Integer,
+        "bool" => Type::Boolean,
         _ => panic!("Unknown type {}", type_str)
     } 
 }
@@ -342,15 +345,37 @@ fn get_int_from_str_literal(literal:&str) -> i64 {
 
 
 /**
+ * Takes a string of either "true" or "false" and returns the corresponding boolean value.
+ * 
+ * ### Examples
+ * `assert_eq!(get_bool_from_str_literal("true"), true);`
+ * 
+ * `assert_eq!(get_bool_from_str_literal("false"), false);`
+ */
+fn get_bool_from_str_literal(literal:&str) -> bool {
+    match literal {
+        "true" => true,
+        "false" => false,
+        _ => panic!("Invalid boolean literal {}", literal)
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a value and returns it as a subtree of the AST, including children nodes.
  */
 fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
     let value = parent.next().unwrap();
     match value.as_rule() {
-        Rule::int_literal => ASTNode::Value{
+        Rule::int_literal => ASTNode::Value {
             literal_type: Type::Integer, 
             value: Literal::Integer(i16::try_from(get_int_from_str_literal(value.as_str())).ok().expect("Could not convert int literal to i16"))
+        },
+
+        Rule::bool_literal => ASTNode::Value {
+            literal_type: Type::Boolean,
+            value: Literal::Boolean(get_bool_from_str_literal(value.as_str()))
         },
 
         _ => panic!("Could not parse value {:?}", pair.as_str())

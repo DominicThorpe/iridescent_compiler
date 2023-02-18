@@ -7,9 +7,10 @@ float = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
 number = {float | int_literal}
 string = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
 char = {"'" ~ ANY ~ "'"}
-primitive_type = @{("string" | "char" | "int" | "float" | "void" | "long" | "double")}
-identifier = @{(ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
-value = {string | char | float | int_literal}
+primitive_type = @{("string" | "char" | "int" | "float" | "void" | "long" | "double" | "bool")}
+identifier = @{!(bool_literal ~ !ASCII_ALPHANUMERIC) ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
+bool_literal = {"true" | "false"}
+value = {string | char | float | bool_literal | int_literal}
 
 parameter = ${primitive_type ~ WHITESPACE+ ~ identifier}
 param_list = {((parameter ~ ",")* ~ parameter)}
