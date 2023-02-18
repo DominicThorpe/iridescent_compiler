@@ -291,17 +291,17 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
         ASTNode::IfStatement {statements, scope, ..} => {
             let scope_id = table.get_next_scope_id();
             let parent_struct = parent.clone().unwrap();
-            table.add(
-                SymbolTableRow::ScopeBlock {
-                    identifier: format!("{}_{}", parent_struct.get_identifier(), scope_id),
-                    parent_scope: parent_struct.get_scope_id(),
-                    scope: scope,
-                    parent: Box::new(parent_struct)
-                }
-            );
+            let new_row = SymbolTableRow::ScopeBlock {
+                identifier: format!("{}_{}", parent_struct.get_identifier(), scope_id),
+                parent_scope: parent_struct.get_scope_id(),
+                scope: scope,
+                parent: Box::new(parent_struct)
+            };
+
+            table.add(new_row.clone());
 
             for statement in statements {
-                generate_sub_symbol_table(statement, table, parent.clone());
+                generate_sub_symbol_table(statement, table, Some(new_row.clone()));
             }
         },
 
@@ -313,7 +313,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 /**
  * Verifies that the given expression node has a child of the correct type
  */
-fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
+fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<(), Box<dyn Error>> {
     match node {
         ASTNode::Term { child } => {
             match &**child {
@@ -360,14 +360,14 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
  * semantically valid (i.e. everything is of the same datatype and datatype is valid for the 
  * operation) - otherwise will return an Error.
  */
-fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
+fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<(), Box<dyn Error>> {
     match &node {
         ASTNode::Expression {lhs, rhs, operator} => {
-            validate_term_of_type(lhs, required_type, symbol_table, scope_history)?;
+            validate_term_of_type(lhs, required_type, symbol_table, &scope_history)?;
             match &rhs {
                 None => {},
                 Some(term) => {
-                    validate_term_of_type(term, required_type, symbol_table, scope_history)?;
+                    validate_term_of_type(term, required_type, symbol_table, &scope_history)?;
                 }
             }
 
@@ -395,17 +395,18 @@ fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
  */
-fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&mut Vec<usize>) -> Result<(), Box<dyn Error>> {
+fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<(), Box<dyn Error>> {
+    let mut scope_history = scope_history.clone();
     match node {
         ASTNode::Function {identifier, statements, return_type, ..} => {
             let mut has_return = false;
             for statement in statements {
                 scope_history.push(symbol_table.get_identifier_in_scope(&identifier, &scope_history)?);
-                semantic_validation_subtree(statement, &symbol_table, scope_history)?;
+                semantic_validation_subtree(statement, &symbol_table, &scope_history)?;
 
                 match statement.clone() {
                     ASTNode::ReturnStatement { expression } => {
-                        validate_expression_of_type(&expression, &return_type, symbol_table, scope_history)?;
+                        validate_expression_of_type(&expression, &return_type, symbol_table, &scope_history)?;
                         has_return = true;
                     },
 
@@ -414,7 +415,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                         let arg_types:Vec<Type> = arguments.into_iter().map(|param|
                             match param {
                                 ASTNode::Value {literal_type, ..} => literal_type, 
-                                ASTNode::Identifier(identifier) => symbol_table.get_identifier_type_in_scope(&identifier, scope_history).unwrap(),
+                                ASTNode::Identifier(identifier) => symbol_table.get_identifier_type_in_scope(&identifier, &scope_history).unwrap(),
                                 unknown => panic!("{:?} is not a valid parameter in function call {}", unknown, identifier) 
                             }
                         ).collect();
@@ -440,7 +441,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         },
 
         ASTNode::VarDeclStatement {var_type, value, ..} => {
-            validate_expression_of_type(&value, &var_type, symbol_table, scope_history)?;
+            validate_expression_of_type(&value, &var_type, symbol_table, &scope_history)?;
         }
         
         ASTNode::VarAssignStatement {identifier, value} => {
@@ -450,15 +451,16 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
 
             symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
             let var_type = symbol_table.get_identifier_type_in_scope(&identifier, &scope_history)?;
-            validate_expression_of_type(&value, &var_type, symbol_table, scope_history)?;
+            validate_expression_of_type(&value, &var_type, symbol_table, &scope_history)?;
         },
 
         ASTNode::IfElifElseStatement {statements} => {
             for statement in statements {
                 match statement {
-                    ASTNode::IfStatement {statements, ..}=> {
+                    ASTNode::IfStatement {statements, scope, ..}=> {
                         for sub_stmt in statements {
-                            semantic_validation_subtree(sub_stmt, symbol_table, scope_history).unwrap();
+                            scope_history.push( *scope );
+                            semantic_validation_subtree(sub_stmt, symbol_table, &scope_history).unwrap();
                         }
                     },
 
@@ -484,12 +486,11 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
  *   - incorrect arguments to function calls
  * 
  * TODO:
- *   - check scope of if-else statements
  *   - check validity of boolean statements
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {
     for node in root {
-        semantic_validation_subtree(&node, symbol_table, &mut vec![0])?;
+        semantic_validation_subtree(&node, symbol_table, &vec![0])?;
     }
 
     Ok(())

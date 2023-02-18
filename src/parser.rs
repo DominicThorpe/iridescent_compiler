@@ -171,18 +171,28 @@ pub enum ASTNode {
 }
 
 
+/**
+ * Represents a symbol in the parser AST
+ */
 #[derive(Debug, Clone)]
 struct Symbol {
     scope: usize,
 }
 
 
+/**
+ * Used to assign preliminary scope to blocks so that the semantic analysis phase can more easily check if
+ * data is in scope or not.
+ */
 #[derive(Debug)]
 struct SymbolTable {
     entries: Vec<Symbol>
 }
 
 impl SymbolTable {
+    /**
+     * Gets the next scope ID, calculated as highest id currently in the table + 1
+     */
     fn get_next_scope_id(&self) -> usize {
         let mut next:usize = 1;
         for symbol in &self.entries {
@@ -194,6 +204,9 @@ impl SymbolTable {
         next
     }
 
+    /**
+     * Adds a row to the symbol table with the given ID
+     */
     fn add(&mut self, scope_id:Option<usize>) -> usize {
         let scope_id = scope_id.unwrap_or(self.get_next_scope_id());
         self.entries.push(Symbol {
@@ -444,6 +457,9 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 }
 
 
+/**
+ * Takes a `Pair` representing a function call and returns it as a subtree of the AST including chld nodes.
+ */
 fn build_ast_from_function_call(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
     let identifier = parent.next().unwrap().as_str().to_string();
