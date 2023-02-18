@@ -525,13 +525,32 @@ fn build_ast_from_boolean_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
     let lhs = match token.as_rule() {
         Rule::term => build_ast_from_term(token),
+        Rule::boolean_term => build_ast_from_boolean_term(token),
         unknown => panic!("Invalid token for boolean term: {:?}", unknown)
+    };
+
+    let mut operator:Option<BooleanOperator> = None;
+    let rhs = match parent.peek() {
+        Some(_) => {
+            let token = parent.next().unwrap();
+            match token.as_rule() {
+                Rule::unary_operator => {
+                    operator = Some(get_boolean_operator_from_str(token.as_str()));
+                    None
+                },
+                Rule::term => Some(Box::new(build_ast_from_term(token))),
+                Rule::boolean_term => Some(Box::new(build_ast_from_boolean_term(token))),
+                unknown => panic!("Invalid token for boolean term: {:?}", unknown)
+            }
+        },
+
+        None => None
     };
 
     ASTNode::BooleanTerm {
         lhs: Box::new(lhs),
-        rhs: None,
-        operator: None
+        rhs: rhs,
+        operator: operator
     }
 }
 
@@ -552,7 +571,6 @@ fn build_ast_from_boolean_expression(pair: pest::iterators::Pair<Rule>) -> ASTNo
     let rhs  = match parent.peek() {
         Some(_) => {
             let token = parent.next().unwrap();
-            println!("B: {:?}", token);
             match token.as_rule() {
                 Rule::boolean_expr => {
                     let operator_or_connector = parent.next().unwrap();

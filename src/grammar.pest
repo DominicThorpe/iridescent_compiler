@@ -31,7 +31,7 @@ loop = {"loop" ~ "{" ~ statement* ~ "}"}
 for_loop = {"for " ~ primitive_type ~ identifier ~ "=" ~ (identifier | value) ~ "until " ~ boolean_expr ~ "do" ~ expression ~ "{" ~ statement* ~ "}"}
 
 boolean_binary_operator = {"==" | "!=" | ">=" | "<=" | ">" | "<"}
-boolean_connector = {"&&" | "||"}
+boolean_connector = {"&&" | "||" | "^^"}
 boolean_unary_operator = {"!"}
 boolean_term = {"(" ~ boolean_term ~ "," ~ boolean_term ~ ")" ~ boolean_binary_operator
 				| "(" ~ boolean_term ~ ")" ~ boolean_unary_operator
