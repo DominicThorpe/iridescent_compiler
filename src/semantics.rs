@@ -450,7 +450,7 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
 
         // 1 numeric argument
         BooleanOperator::Invert => {
-            if lhs_type != &Type::Integer || rhs_type != &Type::Void {
+            if lhs_type != &Type::Boolean || rhs_type != &Type::Void {
                 panic!("{:?} is not a valid argument for boolean operator {:?}", lhs_type, operator)
             }
         },
@@ -502,6 +502,8 @@ fn validate_boolean_term(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                 None => {}
             }
 
+            // if there is an operator, check it is valid for the argument types and return the boolean type as this is a true
+            // boolean term, not just leading to a value
             match operator {
                 Some(operator) => {
                     let lhs_type = lhs_type.unwrap_or(Type::Void);
@@ -529,8 +531,7 @@ fn validate_boolean_expr(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
         ASTNode::BooleanExpression {lhs, rhs, connector, ..} => {
             match &**lhs {
                 ASTNode::BooleanExpression {..} => {
-                    validate_boolean_expr(lhs, required_type, symbol_table, scope_history).unwrap();
-                    lhs_type = Type::Boolean;
+                    lhs_type = validate_boolean_expr(lhs, required_type, symbol_table, scope_history).unwrap();
                 },
                 ASTNode::BooleanTerm {..} => {
                     lhs_type = validate_boolean_term(lhs, required_type, symbol_table, scope_history).unwrap();
@@ -667,8 +668,6 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
  *   - operations on non-matching datatypes
  *   - functions with incorrect return types
  *   - incorrect arguments to function calls
- * 
- * TODO:
  *   - check validity of boolean statements
  */
 pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Result<(), Box<dyn Error>> {

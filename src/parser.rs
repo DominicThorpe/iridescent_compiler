@@ -300,7 +300,7 @@ fn build_ast_from_boolean_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
         Some(_) => {
             let token = parent.next().unwrap();
             match token.as_rule() {
-                Rule::unary_operator => {
+                Rule::boolean_unary_operator => {
                     operator = Some(get_boolean_operator_from_str(token.as_str()));
                 },
                 Rule::term => {
