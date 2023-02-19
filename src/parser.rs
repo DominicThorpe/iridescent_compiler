@@ -280,6 +280,10 @@ fn build_ast_from_var_assign_stmt(pair: pest::iterators::Pair<Rule>) -> ASTNode 
 }
 
 
+/**
+ * Takes a `Pair` representing a boolean term and returns a subtree of the AST including
+ * children nodes.
+ */
 fn build_ast_from_boolean_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.into_inner();
     let token = parent.next().unwrap();
@@ -291,21 +295,38 @@ fn build_ast_from_boolean_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     };
 
     let mut operator:Option<BooleanOperator> = None;
-    let rhs = match parent.peek() {
+    let mut rhs:Option<Box<ASTNode>> = None;
+    match parent.peek() {
         Some(_) => {
             let token = parent.next().unwrap();
             match token.as_rule() {
                 Rule::unary_operator => {
                     operator = Some(get_boolean_operator_from_str(token.as_str()));
-                    None
                 },
-                Rule::term => Some(Box::new(build_ast_from_term(token))),
-                Rule::boolean_term => Some(Box::new(build_ast_from_boolean_term(token))),
+                Rule::term => {
+                    rhs = Some(Box::new(build_ast_from_term(token)))
+                },
+                Rule::boolean_term => {
+                    rhs = Some(Box::new(build_ast_from_boolean_term(token)))
+                },
                 unknown => panic!("Invalid token for boolean term: {:?}", unknown)
+            }
+
+            match parent.next() {
+                Some(op) => {
+                    match op.as_rule() {
+                        Rule::boolean_binary_operator => {
+                            operator = Some(get_boolean_operator_from_str(op.as_str()));
+                        }
+                        unknown => panic!("{:?} is not a valid binary boolean operator token", unknown)
+                    }
+                }
+
+                None => {}
             }
         },
 
-        None => None
+        None => {}
     };
 
     ASTNode::BooleanTerm {
@@ -316,6 +337,10 @@ fn build_ast_from_boolean_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 }
 
 
+/**
+ * Takes a `Pair` representing a boolean expression and returns a subtree of the AST including
+ * children nodes.
+ */
 fn build_ast_from_boolean_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.into_inner();
     let token = parent.next().unwrap();

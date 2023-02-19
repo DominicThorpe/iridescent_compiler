@@ -392,6 +392,188 @@ fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:
 
 
 /**
+ * Checks that an `Expression`, `Term`, `Value`, or `Identifier` AST node is valid according  to 
+ * the datatypes of its children and panics if it is not. Otherwise returns the type that the node 
+ * would have if evaluated or passed to a higher expression or term.
+ */
+fn find_valid_type_of_node(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<Type, Box<dyn Error>> {
+    match node {
+        ASTNode::Expression {lhs, rhs, ..} => {
+            let lhs_type = find_valid_type_of_node(lhs, symbol_table, scope_history).unwrap();
+            match rhs {
+                None => {},
+                Some(rhs) => {
+                    let rhs_type = find_valid_type_of_node(rhs, symbol_table, scope_history).unwrap();
+                    if lhs_type == rhs_type {
+                        return Ok(lhs_type);
+                    } else {
+                        panic!("Boolean term validation found term of {:?} and {:?} mismatched datatypes", lhs_type, rhs_type)
+                    }
+                }
+            }
+
+            Ok(lhs_type)
+        },
+
+        ASTNode::Term {child} => find_valid_type_of_node(child, symbol_table, scope_history),
+        ASTNode::Value {literal_type, ..} => Ok(literal_type.clone()),
+        ASTNode::Identifier(identifier) => symbol_table.get_identifier_type_in_scope(identifier, scope_history),
+        unknown => panic!("{:?} is not a valid token in an expression", unknown)
+    }
+}
+
+
+/**
+ * Checks that the arguments to a boolean operator are valid for that operator, such as only allowing >= 
+ * to be used on a pair of integer arguments.
+ * 
+ * ### Examples
+ * `validate_boolean_operator_with_args(&Type::Integer, &Type::Integer, &BooleanOperator::GreaterThan); // does not panic`
+ * 
+ * `validate_boolean_operator_with_args(&Type::Integer, &Type::Boolean, &BooleanOperator::Equal); // panics`
+ */
+fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:&BooleanOperator) -> Result<(), Box<dyn Error>> {
+    match operator {
+        // 2 arguments can be any datatype except void
+        BooleanOperator::Equal | BooleanOperator::NotEqual => {
+            if (lhs_type != rhs_type) || lhs_type == &Type::Void {
+                panic!("{:?} and {:?} are not valid datatype arguments for boolean operator {:?}", lhs_type, rhs_type, operator)
+            }
+        },
+
+        // must have 2 numeric arguments
+        BooleanOperator::Greater | BooleanOperator::GreaterOrEqual | BooleanOperator::Less | BooleanOperator::LessOrEqual => {
+            if (lhs_type != rhs_type) || lhs_type != &Type::Integer {
+                panic!("{:?} and {:?} are not valid datatype arguments for boolean operator {:?}", lhs_type, rhs_type, operator)
+            }
+        },
+
+        // 1 numeric argument
+        BooleanOperator::Invert => {
+            if lhs_type != &Type::Integer || rhs_type != &Type::Void {
+                panic!("{:?} is not a valid argument for boolean operator {:?}", lhs_type, operator)
+            }
+        },
+    }
+
+    Ok(())
+}
+
+
+/**
+ * Takes an `ASTNode` representing a boolean term and checks that it and its children are valid (e.g. correct 
+ * datatypes and returns a boolean)
+ */
+fn validate_boolean_term(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<Type, Box<dyn Error>> {    
+    let lhs_type:Option<Type>;
+    let mut rhs_type:Option<Type> = None;
+    match node {
+        ASTNode::BooleanTerm {lhs, rhs, operator} => {
+            match &**lhs {
+                ASTNode::BooleanTerm {..} => {
+                    lhs_type = Some(validate_boolean_term(lhs, required_type, symbol_table, scope_history).unwrap());
+                },
+
+                ASTNode::Term {..} => {
+                    let term_type = find_valid_type_of_node(lhs, symbol_table, scope_history).unwrap();
+                    validate_term_of_type(lhs, &term_type, symbol_table, scope_history).unwrap();
+                    lhs_type = Some(term_type);
+                },
+
+                unknown => panic!("{:?} is not a valid token in a boolean term", unknown)
+            };
+
+            match rhs {
+                Some(rhs) => {
+                    match &**rhs {
+                        ASTNode::BooleanTerm {..} => {
+                            rhs_type = Some(validate_boolean_term(rhs, required_type, symbol_table, scope_history).unwrap());
+                        }
+                        ASTNode::Term {..} => {
+                            let term_type = find_valid_type_of_node(rhs, symbol_table, scope_history).unwrap();
+                            validate_term_of_type(rhs, &term_type, symbol_table, scope_history).unwrap();
+                            rhs_type = Some(term_type);
+                        },
+        
+                        unknown => panic!("{:?} is not a valid token in a boolean term", unknown)
+                    };
+                },
+
+                None => {}
+            }
+
+            match operator {
+                Some(operator) => {
+                    let lhs_type = lhs_type.unwrap_or(Type::Void);
+                    validate_boolean_operator_with_args(&lhs_type, &rhs_type.unwrap_or(Type::Void), &operator).unwrap();
+                    Ok(Type::Boolean)
+                }
+
+                None => Ok(lhs_type.unwrap_or(Type::Void))
+            }
+        },
+
+        unknown => panic!("{:?} is not valid for a boolean term", unknown)
+    }
+}
+
+
+/**
+ * Takes an `ASTNode` representing a boolean expression and checks it and its children are valid (i.e. 
+ * correct datatypes).
+ */
+fn validate_boolean_expr(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<Type, Box<dyn Error>> {
+    let lhs_type:Type;
+    let mut rhs_type:Option<Type> = None;
+    match node {
+        ASTNode::BooleanExpression {lhs, rhs, connector, ..} => {
+            match &**lhs {
+                ASTNode::BooleanExpression {..} => {
+                    validate_boolean_expr(lhs, required_type, symbol_table, scope_history).unwrap();
+                    lhs_type = Type::Boolean;
+                },
+                ASTNode::BooleanTerm {..} => {
+                    lhs_type = validate_boolean_term(lhs, required_type, symbol_table, scope_history).unwrap();
+                },
+                unknown => panic!("{:?} is not a valid argument to a boolean expression", unknown)
+            }
+
+            match rhs {
+                Some(rhs) => {
+                    match &**rhs {
+                        ASTNode::BooleanExpression {..} => {
+                            rhs_type = Some(validate_boolean_expr(rhs, required_type, symbol_table, scope_history).unwrap());
+                        },
+                        ASTNode::BooleanTerm {..} => {
+                            rhs_type = Some(validate_boolean_term(rhs, required_type, symbol_table, scope_history).unwrap());
+                        },
+                        unknown => panic!("{:?} is not a valid argument to a boolean expression", unknown)
+                    };
+                },
+
+                None => {}
+            }
+
+            // check that if there is a boolean connector, both the arguments are booleans
+            match connector {
+                Some(_) => {
+                    if lhs_type != Type::Boolean || rhs_type.clone().unwrap_or(Type::Boolean) != Type::Boolean {
+                        panic!("{:?} and {:?} are not valid arguments for a boolean expression", lhs_type, rhs_type.unwrap_or(Type::Void))
+                    }
+                }
+
+                None => {}
+            }
+        },
+
+        unknown => panic!("{:?} is not a boolean expression", unknown)
+    }
+
+    Ok(lhs_type)
+}
+
+
+/**
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
  */
@@ -457,7 +639,8 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         ASTNode::IfElifElseStatement {statements} => {
             for statement in statements {
                 match statement {
-                    ASTNode::IfStatement {statements, scope, ..}=> {
+                    ASTNode::IfStatement {statements, scope, condition}=> {
+                        validate_boolean_expr(condition, &Type::Boolean, symbol_table, &scope_history).unwrap();
                         for sub_stmt in statements {
                             scope_history.push( *scope );
                             semantic_validation_subtree(sub_stmt, symbol_table, &scope_history).unwrap();
