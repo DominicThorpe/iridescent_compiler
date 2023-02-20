@@ -1,4 +1,4 @@
-use crate::parser::*;
+use crate::ast::*;
 
 use std::fmt;
 use std::collections::HashMap;
@@ -10,7 +10,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
  */
 #[derive(Debug)]
 pub enum Argument {
-    Integer(i16)
+    Integer(i16),
+    Boolean(bool)
 }
 
 
@@ -28,10 +29,19 @@ pub enum IntermediateInstr {
     BitwiseXor,
     Complement,
     LogicNeg,
+    LogicAnd,
+    LogicOr,
+    LogicXor,
     LeftShiftLogical,
     LeftShiftArithmetic,
     RightShiftLogical,
     NumNeg,
+    GreaterThan,
+    LessThan,
+    GreaterEqual,
+    LessEqual,
+    Equal,
+    NotEqual,
     Call(String),
     Push(Type, Argument),
     Load(Type, usize),
@@ -39,13 +49,16 @@ pub enum IntermediateInstr {
     Return(Type),
     FuncStart(String),
     FuncEnd(String),
+    Label(String)
 }
 
 impl fmt::Display for IntermediateInstr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             IntermediateInstr::FuncStart(_) => write!(f, "\n\n{:?}", self),
-            _ => write!(f, "{:?}", self)
+            IntermediateInstr::FuncEnd(_) => write!(f, "{:?}", self),
+            IntermediateInstr::Label(label) => write!(f, "\n{:?}:", label),
+            _ => write!(f, "    {:?}", self)
         }
     }
 }
@@ -83,6 +96,31 @@ fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
 }
 
 
+/**
+ * Takes a boolean operator and returns the corresponding intermediate stack instr
+ */
+fn gen_boolean_operator_code(operator:&BooleanOperator) -> IntermediateInstr {
+    match operator {
+        BooleanOperator::Equal => IntermediateInstr::Equal,
+        BooleanOperator::NotEqual => IntermediateInstr::NotEqual,
+        BooleanOperator::Greater => IntermediateInstr::GreaterThan,
+        BooleanOperator::GreaterOrEqual => IntermediateInstr::GreaterEqual,
+        BooleanOperator::Less => IntermediateInstr::LessThan,
+        BooleanOperator::LessOrEqual => IntermediateInstr::LessEqual,
+        BooleanOperator::Invert => IntermediateInstr::LogicNeg
+    }
+}
+
+
+fn gen_boolean_connector_code(connector:&BooleanConnector) -> IntermediateInstr {
+    match connector {
+        BooleanConnector::And => IntermediateInstr::LogicAnd,
+        BooleanConnector::Or => IntermediateInstr::LogicOr,
+        BooleanConnector::XOr => IntermediateInstr::LogicXor
+    }
+}
+
+
 /** 
  * Takes the identifier of a function and a variable and returns a string in the format "__function_variable__"
  */
@@ -102,7 +140,7 @@ fn get_var_repr(func_id:&str, id:&str) -> String {
 fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>, memory_map:&mut HashMap<String, AddrTypePair>, primitive_type:Option<Type>, func_name:&str) {
     static NEXT_ADDRESS:AtomicUsize = AtomicUsize::new(0);
     match root {
-        ASTNode::Function {identifier, statements, return_type, parameters} => {
+        ASTNode::Function {identifier, statements, return_type, parameters, ..} => {
             instructions.push(IntermediateInstr::FuncStart(identifier.to_owned()));
 
             for param in parameters {
@@ -163,10 +201,11 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::Term {child} => gen_intermediate_code(child, instructions, memory_map, None, func_name),
 
         ASTNode::Value {literal_type, value} => {
-            let val = match *value {
-                Literal::Integer(int) => int
+            let argument = match *value {
+                Literal::Integer(int) => Argument::Integer(int),
+                Literal::Boolean(boolean) => Argument::Boolean(boolean)
             };
-            instructions.push(IntermediateInstr::Push(literal_type.clone(), Argument::Integer(val)));
+            instructions.push(IntermediateInstr::Push(literal_type.clone(), argument));
         },
 
         ASTNode::Identifier(identifier) => {
@@ -185,6 +224,65 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
 
             instructions.push(IntermediateInstr::Call(identifier.to_string()));
+        },
+
+        ASTNode::IfElifElseStatement {statements} => {
+            for statement in statements {
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name);
+            }
+        },
+
+        ASTNode::IfStatement {condition, statements, ..} => {
+            gen_intermediate_code(condition, instructions, memory_map, None, func_name);
+            for statement in statements {
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name);
+            }
+
+            instructions.push(IntermediateInstr::Label("_A".to_string()));
+        },
+
+        ASTNode::BooleanExpression {lhs, rhs, operator, connector} => {
+            gen_intermediate_code(lhs, instructions, memory_map, None, func_name);
+            match rhs {
+                Some(rhs) => {
+                    gen_intermediate_code(rhs, instructions, memory_map, None, func_name);
+                },
+                None => {}
+            }
+
+            match operator {
+                Some(operator) => {
+                    instructions.push(gen_boolean_operator_code(operator));
+                },
+
+                None => {}
+            }
+
+            match connector {
+                Some(connector) => {
+                    instructions.push(gen_boolean_connector_code(connector));
+                },
+
+                None => {}
+            }
+        },
+
+        ASTNode::BooleanTerm {lhs, operator, rhs} => {
+            gen_intermediate_code(lhs, instructions, memory_map, None, func_name);
+            match rhs {
+                Some(rhs) => {
+                    gen_intermediate_code(rhs, instructions, memory_map, None, func_name);
+                },
+                None => {}
+            }
+
+            match operator {
+                Some(operator) => {
+                    instructions.push(gen_boolean_operator_code(operator));
+                },
+
+                None => {}
+            }
         }
     }
 }
