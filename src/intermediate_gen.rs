@@ -42,6 +42,7 @@ pub enum IntermediateInstr {
     LessEqual,
     Equal,
     NotEqual,
+    JumpSet(String),
     Call(String),
     Push(Type, Argument),
     Load(Type, usize),
@@ -57,7 +58,7 @@ impl fmt::Display for IntermediateInstr {
         match self {
             IntermediateInstr::FuncStart(_) => write!(f, "\n\n{:?}", self),
             IntermediateInstr::FuncEnd(_) => write!(f, "{:?}", self),
-            IntermediateInstr::Label(label) => write!(f, "\n{:?}:", label),
+            IntermediateInstr::Label(label) => write!(f, "\n{}:", label),
             _ => write!(f, "    {:?}", self)
         }
     }
@@ -126,6 +127,13 @@ fn gen_boolean_connector_code(connector:&BooleanConnector) -> IntermediateInstr 
  */
 fn get_var_repr(func_id:&str, id:&str) -> String {
     format!("{}_{}", func_id, id)
+}
+
+
+fn get_next_label() -> String {
+    static NEXT_LABEL:AtomicUsize = AtomicUsize::new(1);
+    let next_label = NEXT_LABEL.fetch_add(1, Ordering::Relaxed);
+    format!("_{:x}", next_label)
 }
 
 
@@ -233,12 +241,14 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::IfStatement {condition, statements, ..} => {
+            let label = get_next_label();
             gen_intermediate_code(condition, instructions, memory_map, None, func_name);
+            instructions.push(IntermediateInstr::JumpSet(label.clone()));
             for statement in statements {
                 gen_intermediate_code(statement, instructions, memory_map, None, func_name);
             }
 
-            instructions.push(IntermediateInstr::Label("_A".to_string()));
+            instructions.push(IntermediateInstr::Label(label));
         },
 
         ASTNode::BooleanExpression {lhs, rhs, operator, connector} => {
