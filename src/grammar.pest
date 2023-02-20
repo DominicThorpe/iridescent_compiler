@@ -24,13 +24,14 @@ unary_operator = {"~" | "!" | "-"}
 term = {function_call | expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}
-statement = !{var_assign | var_decl | return_stmt | for_loop | indef_loop 
+statement = !{var_assign | var_decl | return_stmt | for_loop | indef_loop | while_loop
 				| print | if_structure | function_call ~ ";" 
                 | "break" ~ ";" | "continue" ~ ";"}
 ternary_expr = {boolean_expr ~ "?" ~ (identifier | value) ~ ":" ~ (identifier | value)}
 
 indef_loop = {"loop" ~ "{" ~ statement* ~ "}"}
 for_loop = {"for " ~ primitive_type ~ identifier ~ "=" ~ (identifier | value) ~ "until " ~ boolean_expr ~ "do" ~ expression ~ "{" ~ statement* ~ "}"}
+while_loop = {"while" ~ boolean_expr ~ "{" ~ statement* ~ "}"}
 
 boolean_binary_operator = {"==" | "!=" | ">=" | "<=" | ">" | "<"}
 boolean_connector = {"&&" | "||" | "^^"}

@@ -315,6 +315,22 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
 
             instructions.push(IntermediateInstr::Jump(label));
+        },
+
+        ASTNode::WhileLoop {statements, condition, ..} => {
+            let start_label = get_next_label();
+            let return_label = get_next_label();
+            instructions.push(IntermediateInstr::Label(start_label.clone()));
+
+            gen_intermediate_code(condition, instructions, memory_map, None, func_name, None);
+            instructions.push(IntermediateInstr::JumpZero(return_label.clone()));
+
+            for statement in statements {
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+            }
+
+            instructions.push(IntermediateInstr::Jump(start_label.to_string()));
+            instructions.push(IntermediateInstr::Label(return_label));
         }
     }
 }

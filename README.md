@@ -92,12 +92,12 @@ In future I plan to add support for `float` (signed 32 bit) numbers, `long` (sig
 
 Currently, the language supports the following flow control structures:
   - functions
-  - if, else-if, else (IEIE) structures
+  - if, else-if, else (IEIE) structures,
+  - indefinite loops
 
 The following are also planned:
   - for loops, 
   - while loops,
-  - indefinite loops,
   - ternary structures
 
 These shall function much the same as their equivalents in C.

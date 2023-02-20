@@ -161,6 +161,12 @@ pub enum ASTNode {
         scope: usize
     },
 
+    WhileLoop {
+        condition: Box<ASTNode>,
+        statements: Vec<ASTNode>,
+        scope: usize
+    },
+
     ElseStatement {
         statements: Vec<ASTNode>,
         scope: usize
