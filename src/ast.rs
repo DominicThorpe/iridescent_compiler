@@ -156,6 +156,11 @@ pub enum ASTNode {
         scope: usize
     },
 
+    ElseStatement {
+        statements: Vec<ASTNode>,
+        scope: usize
+    },
+
     Identifier(String)
 }
 

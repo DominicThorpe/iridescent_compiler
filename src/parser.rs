@@ -47,8 +47,8 @@ impl SymbolTable {
     /**
      * Adds a row to the symbol table with the given ID
      */
-    fn add(&mut self, scope_id:Option<usize>) -> usize {
-        let scope_id = scope_id.unwrap_or(self.get_next_scope_id());
+    fn add(&mut self) -> usize {
+        let scope_id = self.get_next_scope_id();
         self.entries.push(Symbol {
             scope: scope_id,
         });
@@ -423,9 +423,28 @@ fn build_ast_from_if_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut 
         statements.push(build_ast_from_statement(statement, symbol_table));
     }
 
-    let scope = symbol_table.add(None);
+    let scope = symbol_table.add();
     ASTNode::IfStatement {
         condition: Box::new(boolean_expr),
+        statements: statements,
+        scope: scope
+    }
+}
+
+
+/**
+ * Takes a `Pair` representing an else statement and returns it as a subtree of the AST, including 
+ * children nodes.
+ */
+fn build_ast_from_else_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
+    let mut parent = pair.into_inner();
+    let mut statements = vec![];
+    while let Some(statement) = parent.next() {
+        statements.push(build_ast_from_statement(statement, symbol_table));
+    }
+
+    let scope = symbol_table.add();
+    ASTNode::ElseStatement {
         statements: statements,
         scope: scope
     }
@@ -443,7 +462,7 @@ fn build_ast_from_if_structure(pair: pest::iterators::Pair<Rule>, symbol_table: 
         statements.push(match token.as_rule() {
             Rule::if_stmt => build_ast_from_if_stmt(token, symbol_table),
             Rule::elif_stmt => todo!(),
-            Rule::else_stmt => todo!(),
+            Rule::else_stmt => build_ast_from_else_stmt(token, symbol_table),
             unknown => panic!("Invalid token for if statement: {:?}", unknown)
         });
     }
@@ -506,7 +525,7 @@ fn build_ast_from_function(pair: pest::iterators::Pair<Rule>, symbol_table:&mut 
         _ => {}
     }
 
-    let scope = symbol_table.add(None);
+    let scope = symbol_table.add();
     while let Some(statement) = parent.next() {
         statements.push(build_ast_from_statement(statement, symbol_table));
     }

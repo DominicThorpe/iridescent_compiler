@@ -251,6 +251,8 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             instructions.push(IntermediateInstr::Label(label));
         },
 
+        ASTNode::ElseStatement {..} => {},
+
         ASTNode::BooleanExpression {lhs, rhs, operator, connector} => {
             gen_intermediate_code(lhs, instructions, memory_map, None, func_name);
             match rhs {

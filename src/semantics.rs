@@ -640,13 +640,20 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         ASTNode::IfElifElseStatement {statements} => {
             for statement in statements {
                 match statement {
-                    ASTNode::IfStatement {statements, scope, condition}=> {
+                    ASTNode::IfStatement {statements, scope, condition} => {
                         validate_boolean_expr(condition, &Type::Boolean, symbol_table, &scope_history).unwrap();
                         for sub_stmt in statements {
                             scope_history.push( *scope );
                             semantic_validation_subtree(sub_stmt, symbol_table, &scope_history).unwrap();
                         }
                     },
+
+                    ASTNode::ElseStatement {statements, scope} => {
+                        for sub_stmt in statements {
+                            scope_history.push( *scope );
+                            semantic_validation_subtree(sub_stmt, symbol_table, &scope_history).unwrap();
+                        }
+                    }
 
                     _ => panic!("Invalid block if if, else if, else structure {:?}", statement)
                 }
