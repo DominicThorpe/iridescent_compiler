@@ -72,6 +72,26 @@ Currently supported boolean operations are: `!`, `>`, `>=`, `<`, `<=`, `==`, `!=
 Currently supported boolean connectors are: `&&`, `||`, `^^` (XOR).
 
 
+### Indefinite Loops
+
+These loops repeat until they hit a break statement and require a break keyword to be semantically valid (not yet implemented). The syntax for them is as follows:
+```
+loop {
+  statements
+}
+```
+
+
+### While Loops
+
+These loops repeat until the condition they are given becomes false (note that they can never run if the condition starts false). The syntax for them is as follows:
+```
+while <condition> {
+  statements
+}
+```
+
+
 ## Current and Planned Features
 
 ### Functions
@@ -94,10 +114,10 @@ Currently, the language supports the following flow control structures:
   - functions
   - if, else-if, else (IEIE) structures,
   - indefinite loops
+  - while loops,
 
 The following are also planned:
   - for loops, 
-  - while loops,
   - ternary structures
 
 These shall function much the same as their equivalents in C.
