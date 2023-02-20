@@ -432,29 +432,6 @@ fn build_ast_from_if_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut 
 }
 
 
-// /**
-//  * Takes a `Pair` representing an else if statement and returns it as a subtree of the AST, including 
-//  * children nodes.
-//  */
-// fn build_ast_from_elif_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
-//     let mut parent = pair.into_inner();
-//     let boolean_expr = build_ast_from_boolean_expression(parent.next().unwrap());
-
-//     let mut statements = vec![];
-//     while let Some(statement) = parent.next() {
-//         statements.push(build_ast_from_statement(statement, symbol_table));
-//     }
-
-//     let scope = symbol_table.add();
-//     ASTNode::ElseIfStatement {
-//         condition: Box::new(boolean_expr),
-//         statements: statements,
-//         scope: scope
-//     }
-// }
-
-
-
 /**
  * Takes a `Pair` representing an else statement and returns it as a subtree of the AST, including 
  * children nodes.
@@ -497,6 +474,25 @@ fn build_ast_from_if_structure(pair: pest::iterators::Pair<Rule>, symbol_table: 
 
 
 /**
+ * Takes a `Pair` representing an indefinite loop statement and returns it as a subtree of the AST, 
+ * including children nodes.
+ */
+fn build_ast_from_indef_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
+    let mut parent = pair.clone().into_inner();
+    let mut statements = vec![];
+    while let Some(token) = parent.next() {
+        statements.push(build_ast_from_statement(token, symbol_table));
+    }
+
+    let scope = symbol_table.add();
+    ASTNode::IndefLoop {
+        statements: statements,
+        scope: scope
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
 fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
@@ -508,7 +504,8 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mu
         Rule::var_assign => build_ast_from_var_assign_stmt(pair),
         Rule::if_structure => build_ast_from_if_structure(pair.into_inner().next().unwrap(), symbol_table),
         Rule::function_call => build_ast_from_function_call(pair.into_inner().next().unwrap()),
-        _ => panic!("Could not parse statement {:?}", pair.as_str())
+        Rule::indef_loop => build_ast_from_indef_loop(pair.into_inner().next().unwrap(), symbol_table),
+        _ => panic!("Could not parse statement \"{:?}\"", token.as_rule())
     }
 }
 

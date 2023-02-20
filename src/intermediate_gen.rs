@@ -305,7 +305,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
                 None => {}
             }
-        }
+        },
+
+        _ => {}
     }
 }
 

@@ -52,11 +52,11 @@ x = 9;
 
 If-Else-If-Else (IEIE) is used to branch when a given condition is true. They are in the form:
 ```
-if (condition) {
+if <condition> {
     statements
 }
 
-else if (condition) {
+else if <condition> {
     statements
 }
 
@@ -90,13 +90,17 @@ In future I plan to add support for `float` (signed 32 bit) numbers, `long` (sig
 
 ### Control Structures
 
-Currently, the only supported control structure is the function, however, I plan to add: 
+Currently, the language supports the following flow control structures:
+  - functions
+  - if, else-if, else (IEIE) structures
+
+The following are also planned:
   - for loops, 
-  - indefinite loops (from which shall come while loops using `break`),
-  - if-else if-else structures
+  - while loops,
+  - indefinite loops,
   - ternary structures
 
-These shall function much the same as their equivalents in C. I may also add a proper while loop.
+These shall function much the same as their equivalents in C.
 
 
 ### Statements
@@ -147,4 +151,4 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on adding if-else if-else statements to the language up to the intermediate code generation phase.
+Currently working on adding for, while, and indefinite loops to the language up to the intermediate code generation phase.
