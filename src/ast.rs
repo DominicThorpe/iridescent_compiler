@@ -156,6 +156,12 @@ pub enum ASTNode {
         scope: usize
     },
 
+    // ElseIfStatement {
+    //     condition: Box<ASTNode>,
+    //     statements: Vec<ASTNode>,
+    //     scope: usize
+    // },
+
     ElseStatement {
         statements: Vec<ASTNode>,
         scope: usize

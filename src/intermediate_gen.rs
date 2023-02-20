@@ -258,7 +258,6 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::ElseStatement {statements, ..} => {
-            // let label = get_next_label();
             for statement in statements {
                 gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
             }

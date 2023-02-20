@@ -432,6 +432,29 @@ fn build_ast_from_if_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut 
 }
 
 
+// /**
+//  * Takes a `Pair` representing an else if statement and returns it as a subtree of the AST, including 
+//  * children nodes.
+//  */
+// fn build_ast_from_elif_stmt(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
+//     let mut parent = pair.into_inner();
+//     let boolean_expr = build_ast_from_boolean_expression(parent.next().unwrap());
+
+//     let mut statements = vec![];
+//     while let Some(statement) = parent.next() {
+//         statements.push(build_ast_from_statement(statement, symbol_table));
+//     }
+
+//     let scope = symbol_table.add();
+//     ASTNode::ElseIfStatement {
+//         condition: Box::new(boolean_expr),
+//         statements: statements,
+//         scope: scope
+//     }
+// }
+
+
+
 /**
  * Takes a `Pair` representing an else statement and returns it as a subtree of the AST, including 
  * children nodes.
@@ -461,7 +484,7 @@ fn build_ast_from_if_structure(pair: pest::iterators::Pair<Rule>, symbol_table: 
     while let Some(token) = parent.next() {
         statements.push(match token.as_rule() {
             Rule::if_stmt => build_ast_from_if_stmt(token, symbol_table),
-            Rule::elif_stmt => todo!(),
+            Rule::elif_stmt => build_ast_from_if_stmt(token, symbol_table),
             Rule::else_stmt => build_ast_from_else_stmt(token, symbol_table),
             unknown => panic!("Invalid token for if statement: {:?}", unknown)
         });
