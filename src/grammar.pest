@@ -27,6 +27,7 @@ expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 statement = !{var_assign | var_decl | return_stmt | for_loop | loop 
 				| print | if_structure | function_call ~ ";" 
                 | "break" ~ ";" | "continue" ~ ";"}
+ternary_expr = {boolean_expr ~ "?" ~ (identifier | value) ~ ":" ~ (identifier | value)}
 
 loop = {"loop" ~ "{" ~ statement* ~ "}"}
 for_loop = {"for " ~ primitive_type ~ identifier ~ "=" ~ (identifier | value) ~ "until " ~ boolean_expr ~ "do" ~ expression ~ "{" ~ statement* ~ "}"}
@@ -46,6 +47,6 @@ else_stmt = {"else" ~ "{" ~ statement* ~ "}"}
 if_structure = {if_stmt ~ elif_stmt* ~ else_stmt?}
 
 mutability_mod = {("mut" | "const")}
-var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (expression | term) ~ ";"}
-var_assign = {identifier ~ "=" ~ (expression | term) ~ ";"}
+var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (expression | ternary_expr | term) ~ ";"}
+var_assign = {identifier ~ "=" ~ (expression | ternary_expr | term) ~ ";"}
 return_stmt = {"return " ~ (expression | term) ~ ";"}
