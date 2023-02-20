@@ -42,7 +42,7 @@ pub enum IntermediateInstr {
     LessEqual,
     Equal,
     NotEqual,
-    JumpSet(String),
+    JumpZero(String),
     Call(String),
     Push(Type, Argument),
     Load(Type, usize),
@@ -243,7 +243,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::IfStatement {condition, statements, ..} => {
             let label = get_next_label();
             gen_intermediate_code(condition, instructions, memory_map, None, func_name);
-            instructions.push(IntermediateInstr::JumpSet(label.clone()));
+            instructions.push(IntermediateInstr::JumpZero(label.clone()));
             for statement in statements {
                 gen_intermediate_code(statement, instructions, memory_map, None, func_name);
             }
