@@ -307,7 +307,15 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
         },
 
-        _ => {}
+        ASTNode::IndefLoop {statements, ..} => {
+            let label = get_next_label();
+            instructions.push(IntermediateInstr::Label(label.clone()));
+            for statement in statements {
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+            }
+
+            instructions.push(IntermediateInstr::Jump(label));
+        }
     }
 }
 
