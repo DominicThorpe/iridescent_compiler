@@ -331,7 +331,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
             instructions.push(IntermediateInstr::Jump(start_label.to_string()));
             instructions.push(IntermediateInstr::Label(return_label));
-        }
+        },
+
+        _ => {}
     }
 }
 

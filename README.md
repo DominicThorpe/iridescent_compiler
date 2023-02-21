@@ -77,7 +77,7 @@ Currently supported boolean connectors are: `&&`, `||`, `^^` (XOR).
 These loops repeat until they hit a break statement and require a break keyword to be semantically valid (not yet implemented). The syntax for them is as follows:
 ```
 loop {
-  statements
+  <statements>*
 }
 ```
 
@@ -87,9 +87,22 @@ loop {
 These loops repeat until the condition they are given becomes false (note that they can never run if the condition starts false). The syntax for them is as follows:
 ```
 while <condition> {
-  statements
+  <statements>*
 }
 ```
+
+
+### For Loops 
+
+These loops repeat a fixed number of times, but can still contain `break` and `continue` statements. They are in the following format:
+
+```
+for <type> <identifier> = <expression> until <expression> step <expression> {
+  <statements>*
+}
+```
+
+The type specified must be either `int` or `long`, and the step part is optional, and defaults to 1. For example, `for long i = 0 until (50, 1000)* step (1,1)+` and `for int i = 0 until 10` are valid, but `for float i = 0.0 until 10.0 step 0.1` is not.
 
 
 ## Current and Planned Features

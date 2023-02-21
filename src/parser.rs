@@ -516,6 +516,78 @@ fn build_ast_from_while_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &m
 
 
 /**
+ * Takes a `Pair` representing a for loop statement and returns it as a subtree of the AST, 
+ * including children nodes.
+ */
+fn build_ast_from_for_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
+    let mut parent = pair.clone().into_inner();
+    let control_type = get_type_from_string(parent.next().unwrap().as_str());
+    let control_identifier = parent.next().unwrap().as_str().to_string();
+
+    let control_initial_token = parent.next().unwrap();
+    let control_initial = match control_initial_token.as_rule() {
+        Rule::expression => build_ast_from_expression(control_initial_token),
+        Rule::term => build_ast_from_term(control_initial_token),
+        unknown => panic!("{:?} is not a valid initialiser for a for loop control value", unknown)
+    };
+
+    let limit_token = parent.next().unwrap();
+    let limit = match limit_token.as_rule() {
+        Rule::expression => build_ast_from_expression(limit_token),
+        Rule::term => build_ast_from_term(limit_token),
+        unknown => panic!("{:?} is not a valid limit for a for loop", unknown)
+    };
+
+    let step = match parent.peek() {
+        Some(token) => {
+            match token.as_rule() {
+                Rule::term | Rule::expression => {
+                    let token = parent.next().unwrap();
+                    ASTNode::Term {
+                        child: Box::new(ASTNode::Value {
+                            literal_type: control_type.clone(),
+                            value: Literal::Integer(get_int_from_str_literal(token.as_str()).try_into().unwrap())
+                        })
+                    }
+                }
+
+                _ => ASTNode::Term {
+                    child: Box::new(ASTNode::Value {
+                        literal_type: control_type.clone(),
+                        value: Literal::Integer(1)
+                    })
+                }
+            }
+        },
+
+        None => ASTNode::Term {
+            child: Box::new(ASTNode::Value {
+                literal_type: control_type.clone(),
+                value: Literal::Integer(1)
+            })
+        }
+    };
+
+    let mut statements = vec![];
+    while let Some(token) = parent.next() {
+        println!("{:?}", token);
+        statements.push(build_ast_from_statement(token, symbol_table));
+    }
+
+    let scope = symbol_table.add();
+    ASTNode::ForLoop {
+        control_type: control_type,
+        control_identifier: control_identifier,
+        control_initial: Box::new(control_initial),
+        limit: Box::new(limit),
+        step: Box::new(step),
+        statements: statements,
+        scope: scope
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
 fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
@@ -529,6 +601,7 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mu
         Rule::function_call => build_ast_from_function_call(pair.into_inner().next().unwrap()),
         Rule::indef_loop => build_ast_from_indef_loop(pair.into_inner().next().unwrap(), symbol_table),
         Rule::while_loop => build_ast_from_while_loop(pair.into_inner().next().unwrap(), symbol_table),
+        Rule::for_loop => build_ast_from_for_loop(pair.into_inner().next().unwrap(), symbol_table),
         _ => panic!("Could not parse statement \"{:?}\"", token.as_rule())
     }
 }

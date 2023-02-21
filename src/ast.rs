@@ -156,6 +156,11 @@ pub enum ASTNode {
         scope: usize
     },
 
+    ElseStatement {
+        statements: Vec<ASTNode>,
+        scope: usize
+    },
+
     IndefLoop {
         statements: Vec<ASTNode>,
         scope: usize
@@ -167,7 +172,12 @@ pub enum ASTNode {
         scope: usize
     },
 
-    ElseStatement {
+    ForLoop {
+        control_type: Type,
+        control_identifier: String,
+        control_initial: Box<ASTNode>,
+        limit: Box<ASTNode>,
+        step: Box<ASTNode>,
         statements: Vec<ASTNode>,
         scope: usize
     },
