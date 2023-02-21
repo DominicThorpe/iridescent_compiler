@@ -306,6 +306,11 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
         },
 
         ASTNode::ForLoop {statements, scope, control_identifier, control_type, ..} => {
+            match control_type {
+                Type::Integer => {},
+                other => panic!("For loop control variable but be int or long, not {:?}", other)
+            }
+
             // TODO: extract some of this to a separate function as it is repeated  in the IfStatement block
             let scope_id = table.get_next_scope_id();
             let parent_struct = parent.clone().unwrap();
