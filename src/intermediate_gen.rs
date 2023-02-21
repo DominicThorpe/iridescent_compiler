@@ -44,6 +44,7 @@ pub enum IntermediateInstr {
     NotEqual,
     Jump(String),
     JumpZero(String),
+    JumpNotZero(String),
     Call(String),
     Push(Type, Argument),
     Load(Type, usize),
@@ -333,7 +334,48 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             instructions.push(IntermediateInstr::Label(return_label));
         },
 
-        _ => {}
+        ASTNode::ForLoop {control_type, control_identifier, control_initial, limit, step, statements, ..} => {
+            // get initial control value
+            gen_intermediate_code(control_initial, instructions, memory_map, None, func_name, None);
+
+            // add control variable to memory map and memory
+            let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
+            memory_map.insert(get_var_repr(func_name, control_identifier), AddrTypePair {address: address, var_type: control_type.clone()});
+            instructions.push(IntermediateInstr::Store(control_type.clone(), address));
+
+            // add start label
+            let start_label = get_next_label();
+            let return_label = get_next_label();
+            instructions.push(IntermediateInstr::Label(start_label.clone()));
+
+            // generate condition code
+            gen_intermediate_code(limit, instructions, memory_map, None, func_name, None);
+            instructions.push(IntermediateInstr::GreaterThan);
+            instructions.push(IntermediateInstr::JumpNotZero(return_label.clone()));
+
+            // generate statement block code
+            for statement in statements {
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+            }
+
+            // generate step code
+            gen_intermediate_code(step, instructions, memory_map, None, func_name, None);
+
+            // add step to control variable value
+            let metadata = memory_map.get(&get_var_repr(func_name, control_identifier)).unwrap();
+            instructions.push(IntermediateInstr::Load(metadata.var_type.clone(), metadata.address));
+            instructions.push(IntermediateInstr::Add);
+
+            // store result of control variable
+            let metadata = memory_map.get(&get_var_repr(func_name, control_identifier)).unwrap();
+            instructions.push(IntermediateInstr::Store(metadata.var_type.clone(), metadata.address));
+
+            // go back to start of loop
+            instructions.push(IntermediateInstr::Jump(start_label.to_string()));
+
+            // add return label
+            instructions.push(IntermediateInstr::Label(return_label.clone()));
+        }
     }
 }
 

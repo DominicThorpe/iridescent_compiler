@@ -542,22 +542,16 @@ fn build_ast_from_for_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut
         Some(token) => {
             match token.as_rule() {
                 Rule::expression => {
-                    let token = parent.next().unwrap().into_inner().next().unwrap();
-                    ASTNode::Term {
-                        child: Box::new(ASTNode::Value {
-                            literal_type: control_type.clone(),
-                            value: Literal::Integer(get_int_from_str_literal(token.as_str()).try_into().unwrap())
-                        })
-                    }
+                    let token = parent.next().unwrap();
+                    get_expr_from_expr_or_term(token)
                 }
 
                 Rule::term => {
                     let token = parent.next().unwrap();
-                    ASTNode::Term {
-                        child: Box::new(ASTNode::Value {
-                            literal_type: control_type.clone(),
-                            value: Literal::Integer(get_int_from_str_literal(token.as_str()).try_into().unwrap())
-                        })
+                    ASTNode::Expression {
+                        lhs: Box::new(build_ast_from_term(token)),
+                        operator: None,
+                        rhs: None
                     }
                 }
 
