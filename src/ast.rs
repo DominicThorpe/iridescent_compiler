@@ -182,7 +182,9 @@ pub enum ASTNode {
         scope: usize
     },
 
-    Identifier(String)
+    Identifier(String),
+    Break,
+    Continue
 }
 
 

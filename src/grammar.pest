@@ -24,9 +24,11 @@ unary_operator = {"~" | "!" | "-"}
 term = {function_call | expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}
+
+continue_stmt = {"continue" ~ ";"}
+break_stmt = {"break" ~ ";"}
 statement = !{var_assign | var_decl | return_stmt | for_loop | indef_loop | while_loop
-				| print | if_structure | function_call ~ ";" 
-                | "break" ~ ";" | "continue" ~ ";"}
+				| print | if_structure | function_call ~ ";" | continue_stmt | break_stmt}
 ternary_expr = {boolean_expr ~ "?" ~ (identifier | value) ~ ":" ~ (identifier | value)}
 
 indef_loop = {"loop" ~ "{" ~ statement* ~ "}"}

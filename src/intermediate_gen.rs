@@ -78,6 +78,42 @@ pub struct AddrTypePair {
 
 
 /**
+ * Contains the current context of the labels in the intermediate code, such as:
+ *  - ieie_return_label: label for the end of the current if, else if, else block,
+ *  - loop_break_label: label for the end of the current loop block,
+ *  - loop_continue_label: label for the start of the current loop block
+ */
+#[derive(Clone)]
+struct LabelContext {
+    ieie_return_label:Option<String>,
+    loop_break_label:Option<String>,
+    loop_continue_label:Option<String>
+}
+
+impl LabelContext {
+    fn new() -> LabelContext {
+        LabelContext {
+            ieie_return_label: None,
+            loop_break_label: None,
+            loop_continue_label: None
+        }
+    }
+
+    fn update_ieie(&mut self, label:String) {
+        self.ieie_return_label = Some(label)
+    }
+
+    fn update_break(&mut self, label:String) {
+        self.loop_break_label = Some(label)
+    }
+
+    fn update_continue(&mut self, label:String) {
+        self.loop_continue_label = Some(label)
+    }
+}
+
+
+/**
  * Takes an operator and returns the corresponding intermediate stack instr
  */
 fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
@@ -125,13 +161,19 @@ fn gen_boolean_connector_code(connector:&BooleanConnector) -> IntermediateInstr 
 
 
 /** 
- * Takes the identifier of a function and a variable and returns a string in the format "__function_variable__"
+ * Takes the identifier of a function and a variable and returns a string in the format.
  */
 fn get_var_repr(func_id:&str, id:&str) -> String {
     format!("{}_{}", func_id, id)
 }
 
 
+/**
+ * Derives the next label from a static variable. Label is an underscore '_' followed by a hex representation
+ * of the number of the label. 
+ * 
+ * For example, we start at "_1", then "_2", and the 32nd is "_20".
+ */
 fn get_next_label() -> String {
     static NEXT_LABEL:AtomicUsize = AtomicUsize::new(1);
     let next_label = NEXT_LABEL.fetch_add(1, Ordering::Relaxed);
@@ -148,32 +190,32 @@ fn get_next_label() -> String {
  * handling a function to ensure the correct return type instr.
  */
 fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>, memory_map:&mut HashMap<String, AddrTypePair>, 
-            primitive_type:Option<Type>, func_name:&str, return_label:Option<&str>) {
+            primitive_type:Option<Type>, func_name:&str, label_context:&mut LabelContext) {
     static NEXT_ADDRESS:AtomicUsize = AtomicUsize::new(0);
     match root {
         ASTNode::Function {identifier, statements, return_type, parameters, ..} => {
             instructions.push(IntermediateInstr::FuncStart(identifier.to_owned()));
 
             for param in parameters {
-                gen_intermediate_code(param, instructions, memory_map, None, identifier, None)
+                gen_intermediate_code(param, instructions, memory_map, None, identifier, label_context)
             }
 
             for stmt in statements {
-                gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()), identifier, None);
+                gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()), identifier, label_context);
             }
 
             instructions.push(IntermediateInstr::FuncEnd(identifier.to_owned()));
         },
 
         ASTNode::ReturnStatement {expression} => {
-            gen_intermediate_code(expression, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(expression, instructions, memory_map, None, func_name, label_context);
             instructions.push(IntermediateInstr::Return(primitive_type.unwrap()))
         },
 
         ASTNode::VarDeclStatement {identifier, value, var_type, ..} => {
             match &**value {
                 ASTNode::Expression {..} => {
-                    gen_intermediate_code(value, instructions, memory_map, None, func_name, None);
+                    gen_intermediate_code(value, instructions, memory_map, None, func_name, label_context);
 
                     let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
                     memory_map.insert(get_var_repr(func_name, identifier), AddrTypePair {address: address, var_type: var_type.clone()});
@@ -186,7 +228,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::VarAssignStatement {identifier, value} => {
             match &**value {
                 ASTNode::Expression {..} => {
-                    gen_intermediate_code(value, instructions, memory_map, None, func_name, None);
+                    gen_intermediate_code(value, instructions, memory_map, None, func_name, label_context);
 
                     let metadata = memory_map.get(&get_var_repr(func_name, identifier)).unwrap();
                     instructions.push(IntermediateInstr::Store(metadata.var_type.clone(), metadata.address));
@@ -196,10 +238,10 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::Expression {rhs, lhs, operator} => {
-            gen_intermediate_code(&*lhs, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(&*lhs, instructions, memory_map, None, func_name, label_context);
 
             match rhs {
-                Some(rhs) => gen_intermediate_code(rhs, instructions, memory_map, None, func_name, None),
+                Some(rhs) => gen_intermediate_code(rhs, instructions, memory_map, None, func_name, label_context),
                 None => {}
             }
 
@@ -209,7 +251,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
         },
 
-        ASTNode::Term {child} => gen_intermediate_code(child, instructions, memory_map, None, func_name, None),
+        ASTNode::Term {child} => gen_intermediate_code(child, instructions, memory_map, None, func_name, label_context),
 
         ASTNode::Value {literal_type, value} => {
             let argument = match *value {
@@ -231,7 +273,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::FunctionCall {identifier, arguments} => {
             for arg in arguments {
-                gen_intermediate_code(arg, instructions, memory_map, None, func_name, None);
+                gen_intermediate_code(arg, instructions, memory_map, None, func_name, label_context);
             }
 
             instructions.push(IntermediateInstr::Call(identifier.to_string()));
@@ -239,8 +281,10 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::IfElifElseStatement {statements} => {
             let return_label = get_next_label();
+            label_context.update_ieie(return_label.clone());
+
             for statement in statements {
-                gen_intermediate_code(statement, instructions, memory_map, None, func_name, Some(&return_label));
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, label_context);
             }
 
             instructions.push(IntermediateInstr::Label(return_label));
@@ -248,27 +292,28 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::IfStatement {condition, statements, ..} => {
             let label = get_next_label();
-            gen_intermediate_code(condition, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(condition, instructions, memory_map, None, func_name, label_context);
             instructions.push(IntermediateInstr::JumpZero(label.clone()));
             for statement in statements {
-                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, label_context);
             }
 
-            instructions.push(IntermediateInstr::Jump(return_label.unwrap().to_string()));
+            let return_label = label_context.ieie_return_label.as_ref().unwrap();
+            instructions.push(IntermediateInstr::Jump(return_label.to_string()));
             instructions.push(IntermediateInstr::Label(label));
         },
 
         ASTNode::ElseStatement {statements, ..} => {
             for statement in statements {
-                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, label_context);
             }
         },
 
         ASTNode::BooleanExpression {lhs, rhs, operator, connector} => {
-            gen_intermediate_code(lhs, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(lhs, instructions, memory_map, None, func_name, label_context);
             match rhs {
                 Some(rhs) => {
-                    gen_intermediate_code(rhs, instructions, memory_map, None, func_name, None);
+                    gen_intermediate_code(rhs, instructions, memory_map, None, func_name, label_context);
                 },
                 None => {}
             }
@@ -291,10 +336,10 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::BooleanTerm {lhs, operator, rhs} => {
-            gen_intermediate_code(lhs, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(lhs, instructions, memory_map, None, func_name, label_context);
             match rhs {
                 Some(rhs) => {
-                    gen_intermediate_code(rhs, instructions, memory_map, None, func_name, None);
+                    gen_intermediate_code(rhs, instructions, memory_map, None, func_name, label_context);
                 },
                 None => {}
             }
@@ -309,25 +354,32 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::IndefLoop {statements, ..} => {
-            let label = get_next_label();
-            instructions.push(IntermediateInstr::Label(label.clone()));
+            let continue_label = get_next_label();
+            let return_label = get_next_label();
+            label_context.update_continue(continue_label.clone());
+            label_context.update_break(return_label.clone());
+
+            instructions.push(IntermediateInstr::Label(continue_label.clone()));
             for statement in statements {
-                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, label_context);
             }
 
-            instructions.push(IntermediateInstr::Jump(label));
+            instructions.push(IntermediateInstr::Jump(continue_label));
+            instructions.push(IntermediateInstr::Label(return_label.clone()));
         },
 
         ASTNode::WhileLoop {statements, condition, ..} => {
             let start_label = get_next_label();
             let return_label = get_next_label();
+            label_context.update_continue(start_label.clone());
+            label_context.update_break(return_label.clone());
             instructions.push(IntermediateInstr::Label(start_label.clone()));
 
-            gen_intermediate_code(condition, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(condition, instructions, memory_map, None, func_name, label_context);
             instructions.push(IntermediateInstr::JumpZero(return_label.clone()));
 
             for statement in statements {
-                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, label_context);
             }
 
             instructions.push(IntermediateInstr::Jump(start_label.to_string()));
@@ -336,7 +388,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::ForLoop {control_type, control_identifier, control_initial, limit, step, statements, ..} => {
             // get initial control value
-            gen_intermediate_code(control_initial, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(control_initial, instructions, memory_map, None, func_name, label_context);
 
             // add control variable to memory map and memory
             let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
@@ -346,20 +398,22 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             // add start label
             let start_label = get_next_label();
             let return_label = get_next_label();
+            label_context.update_continue(start_label.clone());
+            label_context.update_break(return_label.clone());
             instructions.push(IntermediateInstr::Label(start_label.clone()));
 
             // generate condition code
-            gen_intermediate_code(limit, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(limit, instructions, memory_map, None, func_name, label_context);
             instructions.push(IntermediateInstr::GreaterThan);
             instructions.push(IntermediateInstr::JumpNotZero(return_label.clone()));
 
             // generate statement block code
             for statement in statements {
-                gen_intermediate_code(statement, instructions, memory_map, None, func_name, None);
+                gen_intermediate_code(statement, instructions, memory_map, None, func_name, label_context);
             }
 
             // generate step code
-            gen_intermediate_code(step, instructions, memory_map, None, func_name, None);
+            gen_intermediate_code(step, instructions, memory_map, None, func_name, label_context);
 
             // add step to control variable value
             let metadata = memory_map.get(&get_var_repr(func_name, control_identifier)).unwrap();
@@ -375,6 +429,14 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
             // add return label
             instructions.push(IntermediateInstr::Label(return_label.clone()));
+        },
+
+        ASTNode::Break => {
+            instructions.push(IntermediateInstr::Jump(label_context.clone().loop_break_label.unwrap().to_string())); 
+        },
+
+        ASTNode::Continue => {
+            instructions.push(IntermediateInstr::Jump(label_context.clone().loop_continue_label.unwrap().to_string()));
         }
     }
 }
@@ -387,8 +449,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 pub fn generate_program_intermediate(ast:Vec<ASTNode>) -> Vec<IntermediateInstr> {
     let mut instructions = vec![];
     let mut memory_map:HashMap<String, AddrTypePair> = HashMap::new();
+    let context = LabelContext::new();
     for top_level in ast {
-        gen_intermediate_code(&top_level, &mut instructions, &mut memory_map, None, "global", None);
+        gen_intermediate_code(&top_level, &mut instructions, &mut memory_map, None, "global", &mut context.clone());
     }
 
     instructions

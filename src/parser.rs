@@ -590,6 +590,15 @@ fn build_ast_from_for_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut
 }
 
 
+fn build_ast_from_loop_ctrl(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    match pair.as_rule() {
+        Rule::continue_stmt => ASTNode::Continue,
+        Rule::break_stmt => ASTNode::Break,
+        other => panic!("{:?} is not a valid return or continue statement", other)
+    }
+}
+
+
 /**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
@@ -605,6 +614,8 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mu
         Rule::indef_loop => build_ast_from_indef_loop(pair.into_inner().next().unwrap(), symbol_table),
         Rule::while_loop => build_ast_from_while_loop(pair.into_inner().next().unwrap(), symbol_table),
         Rule::for_loop => build_ast_from_for_loop(pair.into_inner().next().unwrap(), symbol_table),
+        Rule::continue_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
+        Rule::break_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
         _ => panic!("Could not parse statement \"{:?}\"", token.as_rule())
     }
 }
