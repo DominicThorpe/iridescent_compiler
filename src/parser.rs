@@ -541,7 +541,17 @@ fn build_ast_from_for_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut
     let step = match parent.peek() {
         Some(token) => {
             match token.as_rule() {
-                Rule::term | Rule::expression => {
+                Rule::expression => {
+                    let token = parent.next().unwrap().into_inner().next().unwrap();
+                    ASTNode::Term {
+                        child: Box::new(ASTNode::Value {
+                            literal_type: control_type.clone(),
+                            value: Literal::Integer(get_int_from_str_literal(token.as_str()).try_into().unwrap())
+                        })
+                    }
+                }
+
+                Rule::term => {
                     let token = parent.next().unwrap();
                     ASTNode::Term {
                         child: Box::new(ASTNode::Value {
@@ -570,7 +580,6 @@ fn build_ast_from_for_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut
 
     let mut statements = vec![];
     while let Some(token) = parent.next() {
-        println!("{:?}", token);
         statements.push(build_ast_from_statement(token, symbol_table));
     }
 

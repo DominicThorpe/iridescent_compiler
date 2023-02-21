@@ -305,6 +305,34 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             }
         },
 
+        ASTNode::ForLoop {statements, scope, control_identifier, control_type, ..} => {
+            // TODO: extract some of this to a separate function as it is repeated  in the IfStatement block
+            let scope_id = table.get_next_scope_id();
+            let parent_struct = parent.clone().unwrap();
+            let new_row = SymbolTableRow::ScopeBlock {
+                identifier: format!("{}_{}", parent_struct.get_identifier(), scope_id),
+                parent_scope: parent_struct.get_scope_id(),
+                scope: scope,
+                parent: Box::new(parent_struct)
+            };
+
+            table.add(new_row.clone());
+
+            table.add(
+                SymbolTableRow::Variable {
+                    identifier: control_identifier,
+                    primitive_type: control_type,
+                    mutability: Mutability::Mutable,
+                    parent_scope: scope_id,
+                    parent: Box::new(new_row.clone())
+                }
+            );
+
+            for statement in statements {
+                generate_sub_symbol_table(statement, table, Some(new_row.clone()));
+            }
+        }
+
         _ => {}
     };
 }
