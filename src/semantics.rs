@@ -608,6 +608,50 @@ fn validate_boolean_expr(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
 
 
 /**
+ * Returns true if this section of the AST contains a `break` statement, otherwise returns false.
+ */
+fn check_if_has_break(node:&ASTNode) -> bool {
+    match node {
+        ASTNode::Break => true,
+
+        ASTNode::IfElifElseStatement {statements, ..} |
+        ASTNode::IfStatement {statements, ..} |
+        ASTNode::ElseStatement {statements, ..} => {
+            for statement in statements {
+                if check_if_has_break(statement) == true {
+                    return true;
+                }
+            }
+
+            false
+        }
+
+        _ => false
+    }
+}
+
+
+/**
+ * Validates that an indefinite loop has a `break` statement somewhere so that it is not infinite
+ */
+fn validate_indef_loop_has_break(node:&ASTNode) -> bool {
+    match node {
+        ASTNode::IndefLoop {statements, ..} => {
+            for statement in statements {
+                if check_if_has_break(statement) {
+                    return true;
+                }
+            }
+        },
+
+        unknown => panic!("{:?} is not an indefinite loop node", unknown)
+    }
+
+    panic!("Indefinite loop must contain a break statement!");
+}
+
+
+/**
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
  */
@@ -690,6 +734,25 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
 
                     _ => panic!("Invalid block if if, else if, else structure {:?}", statement)
                 }
+            }
+        },
+
+        ASTNode::IndefLoop {statements, scope, ..} => {
+            if !validate_indef_loop_has_break(node) {
+                panic!("Indefinite loop must contain a break statement!");
+            }
+
+            for statement in statements {
+                scope_history.push( *scope );
+                semantic_validation_subtree(statement, &symbol_table, &scope_history)?;
+            }
+        },
+
+        ASTNode::ForLoop {statements, scope, ..} |
+        ASTNode::WhileLoop {statements, scope, ..} => {
+            for statement in statements {
+                scope_history.push( *scope );
+                semantic_validation_subtree(statement, &symbol_table, &scope_history)?;
             }
         }
 
