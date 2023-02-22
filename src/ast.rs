@@ -161,6 +161,11 @@ pub enum ASTNode {
         scope: usize
     },
 
+    TypeCast {
+        from: Box<ASTNode>,
+        into: Type
+    },
+
     IndefLoop {
         statements: Vec<ASTNode>,
         scope: usize

@@ -52,7 +52,8 @@ pub enum IntermediateInstr {
     Return(Type),
     FuncStart(String),
     FuncEnd(String),
-    Label(String)
+    Label(String),
+    Cast(Type, Type)
 }
 
 impl fmt::Display for IntermediateInstr {
@@ -351,6 +352,17 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
                 None => {}
             }
+        },
+
+        ASTNode::TypeCast {from, into} => {
+            gen_intermediate_code(from, instructions, memory_map, None, func_name, label_context);
+            let from_type = match &**from {
+                ASTNode::Identifier(identifier) => &memory_map.get(&get_var_repr(func_name, &identifier)).unwrap().var_type,
+                ASTNode::Value {literal_type, ..} => literal_type,
+                other => panic!("{:?} is not a valid target for a type cast expression", other)
+            };
+
+            instructions.push(IntermediateInstr::Cast(from_type.clone(), into.clone()));
         },
 
         ASTNode::IndefLoop {statements, ..} => {

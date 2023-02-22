@@ -21,7 +21,7 @@ function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 print = {"print" ~ ((identifier | value ) ~ ",")* ~ (identifier | value) ~ ";"}
 binary_operator = {("+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<")}
 unary_operator = {"~" | "!" | "-"}
-term = {function_call | expression | identifier | value}
+term = {type_cast | function_call | expression | identifier | value}
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 				| "(" ~ term ~ ")" ~ unary_operator}
 
@@ -30,6 +30,7 @@ break_stmt = {"break" ~ ";"}
 statement = !{var_assign | var_decl | return_stmt | for_loop | indef_loop | while_loop
 				| print | if_structure | function_call ~ ";" | continue_stmt | break_stmt}
 ternary_expr = {boolean_expr ~ "?" ~ (identifier | value) ~ ":" ~ (identifier | value)}
+type_cast = {primitive_type ~ "(" ~ (identifier | value) ~ ")"}
 
 indef_loop = {"loop" ~ "{" ~ statement* ~ "}"}
 for_loop = {"for " ~ primitive_type ~ identifier ~ "=" ~ (expression | term) ~ "until" ~ (expression | term) ~ ("step" ~ (expression | term))? ~ "{" ~ statement* ~ "}"}

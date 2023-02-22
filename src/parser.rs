@@ -122,6 +122,28 @@ fn build_ast_from_identifier(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
 
 /**
+ * Takes a `Pair` representing a variable type cast and returns it as a subtree of the AST, including 
+ * children nodes.
+ */
+fn build_ast_from_cast(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.clone().into_inner();
+    let into = get_type_from_string(parent.next().unwrap().as_str());
+
+    let from_token = parent.next().unwrap();
+    let from = match from_token.as_rule() {
+        Rule::value => build_ast_from_value(from_token),
+        Rule::identifier => build_ast_from_identifier(from_token),
+        other => panic!("{:?} is not a valid target for a cast statement", other)
+    };
+
+    ASTNode::TypeCast {
+        from: Box::new(from),
+        into: into
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a term and returns it as a subtree of the AST, including children nodes.
  */
 fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
@@ -132,6 +154,7 @@ fn build_ast_from_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
         Rule::identifier => build_ast_from_identifier(child_token),
         Rule::function_call => build_ast_from_function_call(child_token),
         Rule::expression => build_ast_from_expression(child_token),
+        Rule::type_cast => build_ast_from_cast(child_token),
         _ => panic!("Could not parse term {:?}", pair.as_str())
     };
 

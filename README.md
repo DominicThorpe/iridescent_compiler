@@ -74,7 +74,7 @@ Currently supported boolean connectors are: `&&`, `||`, `^^` (XOR).
 
 ### Indefinite Loops
 
-These loops repeat until they hit a break statement and require a break keyword to be semantically valid (not yet implemented). The syntax for them is as follows:
+These loops repeat until they hit a break statement and require a break keyword to be semantically valid. The syntax for them is as follows:
 ```
 loop {
   <statements>*
@@ -184,4 +184,4 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on adding for, while, and indefinite loops to the language up to the intermediate code generation phase.
+Currently working on adding type casting to the language up to the intermediate code generation phase.
