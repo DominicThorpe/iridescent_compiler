@@ -669,6 +669,24 @@ fn validate_indef_loop_has_break(node:&ASTNode) -> bool {
 }
 
 
+fn validate_for_loop_part(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&Vec<usize>, control_type:&Type) -> Result<(), Box<dyn Error>> {
+    semantic_validation_subtree(node, &symbol_table, &scope_history)?;
+    match node {
+        ASTNode::Expression {..} => {
+            validate_expression_of_type(node, control_type, symbol_table, scope_history)?;
+        },
+
+        ASTNode::Term {..} => {
+            validate_term_of_type(node, control_type, symbol_table, scope_history)?;
+        },
+
+        other => panic!("{:?} is not a valid loop control statement argument", other)
+    }
+
+    Ok(())
+}
+
+
 /**
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
@@ -719,7 +737,6 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         },
 
         ASTNode::VarDeclStatement {var_type, value, ..} => {
-            println!("{:?}\n{:?}", var_type, value);
             validate_expression_of_type(&value, &var_type, symbol_table, &scope_history).unwrap();
         }
         
@@ -767,7 +784,17 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             }
         },
 
-        ASTNode::ForLoop {statements, scope, ..} |
+        ASTNode::ForLoop {statements, scope, control_type, control_initial, limit, step, ..} => {
+            validate_for_loop_part(control_initial, &symbol_table, &scope_history, control_type).unwrap();
+            validate_for_loop_part(limit, &symbol_table, &scope_history, control_type).unwrap();
+            validate_for_loop_part(step, &symbol_table, &scope_history, control_type).unwrap();
+
+            for statement in statements {
+                scope_history.push( *scope );
+                semantic_validation_subtree(statement, &symbol_table, &scope_history)?;
+            }
+        },
+
         ASTNode::WhileLoop {statements, scope, ..} => {
             for statement in statements {
                 scope_history.push( *scope );
