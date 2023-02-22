@@ -377,7 +377,23 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                     }
                 },
 
-                ASTNode::TypeCast {..} => {}
+                ASTNode::TypeCast {from, ..} => {
+                    match &**from {
+                        ASTNode::Identifier(identifier) => {
+                            if &symbol_table.get_identifier_type_in_scope(&identifier, scope_history).unwrap() != required_type {
+                                return Err(Box::new(IncorrectDatatype));
+                            }
+                        },
+
+                        ASTNode::Value {literal_type, ..} => {
+                            if &literal_type != &required_type {
+                                return Err(Box::new(IncorrectDatatype));
+                            }
+                        },
+
+                        other => panic!("{:?} is not a valid target for a cast expression", other)
+                    }
+                }
 
                 _ => panic!("{:?} is not a valid token for semantic analysis of terms.", node)
             }
