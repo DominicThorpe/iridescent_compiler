@@ -307,8 +307,8 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 
         ASTNode::ForLoop {statements, scope, control_identifier, control_type, ..} => {
             match control_type {
-                Type::Integer => {},
-                other => panic!("For loop control variable but be int or long, not {:?}", other)
+                Type::Integer | Type::Long => {},
+                other => panic!("For loop control variable must be int or long, not {:?}", other)
             }
 
             // TODO: extract some of this to a separate function as it is repeated  in the IfStatement block
