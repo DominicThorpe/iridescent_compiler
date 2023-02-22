@@ -5,6 +5,7 @@
 pub enum Type {
     Void,
     Integer,
+    Long,
     Boolean
 }
 
@@ -15,6 +16,7 @@ pub enum Type {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Literal {
     Integer(i16),
+    Long(i32),
     Boolean(bool)
 }
 
@@ -206,6 +208,7 @@ pub fn get_type_from_string(type_str:&str) -> Type {
         "void" => Type::Void,
         "int" => Type::Integer,
         "bool" => Type::Boolean,
+        "long" => Type::Long,
         _ => panic!("Unknown type {}", type_str)
     } 
 }
@@ -322,6 +325,11 @@ pub fn get_mutability_from_str(mutability_str:&str) -> Mutability {
  * `assert_eq!(get_int_from_str_literal("20"), 20);`
  */
 pub fn get_int_from_str_literal(literal:&str) -> i64 {
+    let literal = match literal.ends_with("l") {
+        true => &literal[0..literal.len() - 1],
+        false => literal
+    };
+
     if literal.starts_with("0b") {
         return i64::from_str_radix(&literal[2..], 2).unwrap();
     } else if literal.starts_with("0x") {

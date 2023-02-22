@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[derive(Debug)]
 pub enum Argument {
     Integer(i16),
+    Long(i32),
     Boolean(bool)
 }
 
@@ -257,6 +258,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::Value {literal_type, value} => {
             let argument = match *value {
                 Literal::Integer(int) => Argument::Integer(int),
+                Literal::Long(long) => Argument::Long(long),
                 Literal::Boolean(boolean) => Argument::Boolean(boolean)
             };
             instructions.push(IntermediateInstr::Push(literal_type.clone(), argument));

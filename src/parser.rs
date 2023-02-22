@@ -106,6 +106,11 @@ fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
             value: Literal::Integer(i16::try_from(get_int_from_str_literal(value.as_str())).ok().expect("Could not convert int literal to i16"))
         },
 
+        Rule::long_literal => ASTNode::Value {
+            literal_type: Type::Long,
+            value: Literal::Long(i32::try_from(get_int_from_str_literal(value.as_str())).ok().expect("Could not convert int literal to i32"))
+        },
+
         Rule::bool_literal => ASTNode::Value {
             literal_type: Type::Boolean,
             value: Literal::Boolean(get_bool_from_str_literal(value.as_str()))

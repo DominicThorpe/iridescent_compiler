@@ -494,7 +494,7 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
 
         // must have 2 numeric arguments
         BooleanOperator::Greater | BooleanOperator::GreaterOrEqual | BooleanOperator::Less | BooleanOperator::LessOrEqual => {
-            if (lhs_type != rhs_type) || lhs_type != &Type::Integer {
+            if (lhs_type != rhs_type) || (lhs_type != &Type::Integer && lhs_type != &Type::Long) {
                 panic!("{:?} and {:?} are not valid datatype arguments for boolean operator {:?}", lhs_type, rhs_type, operator)
             }
         },
@@ -719,7 +719,8 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         },
 
         ASTNode::VarDeclStatement {var_type, value, ..} => {
-            validate_expression_of_type(&value, &var_type, symbol_table, &scope_history)?;
+            println!("{:?}\n{:?}", var_type, value);
+            validate_expression_of_type(&value, &var_type, symbol_table, &scope_history).unwrap();
         }
         
         ASTNode::VarAssignStatement {identifier, value} => {
@@ -728,7 +729,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             }
 
             symbol_table.get_identifier_in_scope(&identifier, &scope_history)?;
-            let var_type = symbol_table.get_identifier_type_in_scope(&identifier, &scope_history)?;
+            let var_type = symbol_table.get_identifier_type_in_scope(&identifier, &scope_history).unwrap();
             validate_expression_of_type(&value, &var_type, symbol_table, &scope_history)?;
         },
 

@@ -3,14 +3,15 @@ COMMENT = _{("/*" ~ (!"*/" ~ ANY)* ~ "*/")}
 program = {SOI ~ function_decl* ~ EOI}
 
 int_literal = @{("0b" ~ ("0" | "1")*) | ("0x" ~ ASCII_HEX_DIGIT*) | ASCII_DIGIT*}
+long_literal = @{int_literal ~ "l"}
 float = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
-number = {float | int_literal}
+number = {float | long_literal | int_literal}
 string = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
 char = {"'" ~ ANY ~ "'"}
 primitive_type = @{("string" | "char" | "int" | "float" | "void" | "long" | "double" | "bool")}
 identifier = @{!(bool_literal ~ !ASCII_ALPHANUMERIC) ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
 bool_literal = {"true" | "false"}
-value = {string | char | float | bool_literal | int_literal}
+value = {string | char | float | bool_literal | long_literal | int_literal}
 
 parameter = ${primitive_type ~ WHITESPACE+ ~ identifier}
 param_list = {((parameter ~ ",")* ~ parameter)}
