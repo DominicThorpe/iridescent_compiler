@@ -347,7 +347,6 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
  * Verifies that the given expression node has a child of the correct type
  */
 fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<(), Box<dyn Error>> {
-    println!("Got: {:?}", node);
     match node {
         ASTNode::Term { child } => {
             match &**child {

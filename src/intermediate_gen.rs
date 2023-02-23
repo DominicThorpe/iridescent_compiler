@@ -217,15 +217,13 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::VarDeclStatement {identifier, value, var_type, ..} => {
             match &**value {
-                ASTNode::Expression {..} => {
-                    gen_intermediate_code(value, instructions, memory_map, None, func_name, label_context);
-
-                    let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
-                    memory_map.insert(get_var_repr(func_name, identifier), AddrTypePair {address: address, var_type: var_type.clone()});
-                    instructions.push(IntermediateInstr::Store(var_type.clone(), address));
-                },
-                _ => {}
+                ASTNode::Expression {..} | ASTNode::TernaryExpression {..} => gen_intermediate_code(value, instructions, memory_map, None, func_name, label_context),
+                _ => panic!("Cannot generate intermdeiate code in variable assignment for {:?}", value)
             }
+
+            let address = NEXT_ADDRESS.fetch_add(1, Ordering::Relaxed);
+            memory_map.insert(get_var_repr(func_name, identifier), AddrTypePair {address: address, var_type: var_type.clone()});
+            instructions.push(IntermediateInstr::Store(var_type.clone(), address));
         },
 
         ASTNode::VarAssignStatement {identifier, value} => {
@@ -455,7 +453,20 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             instructions.push(IntermediateInstr::Jump(label_context.clone().loop_continue_label.unwrap().to_string()));
         },
 
-        ASTNode::TernaryExpression {..} => {}
+        ASTNode::TernaryExpression {condition, if_true, if_false} => {
+            let return_label = get_next_label();
+            let false_label = get_next_label();
+            gen_intermediate_code(condition, instructions, memory_map, None, func_name, label_context);
+
+            instructions.push(IntermediateInstr::JumpZero(false_label.clone()));
+            gen_intermediate_code(if_true, instructions, memory_map, None, func_name, label_context);
+            instructions.push(IntermediateInstr::Jump(return_label.to_string()));
+
+            instructions.push(IntermediateInstr::Label(false_label));
+            gen_intermediate_code(if_false, instructions, memory_map, None, func_name, label_context);
+
+            instructions.push(IntermediateInstr::Label(return_label));
+        }
     }
 }
 
