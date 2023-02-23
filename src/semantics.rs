@@ -377,21 +377,10 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                     }
                 },
 
-                ASTNode::TypeCast {from, ..} => {
-                    match &**from {
-                        ASTNode::Identifier(identifier) => {
-                            if &symbol_table.get_identifier_type_in_scope(&identifier, scope_history).unwrap() != required_type {
-                                return Err(Box::new(IncorrectDatatype));
-                            }
-                        },
-
-                        ASTNode::Value {literal_type, ..} => {
-                            if &literal_type != &required_type {
-                                return Err(Box::new(IncorrectDatatype));
-                            }
-                        },
-
-                        other => panic!("{:?} is not a valid target for a cast expression", other)
+                ASTNode::TypeCast {into, ..} => {
+                    semantic_validation_subtree(child, symbol_table, scope_history).unwrap();
+                    if into != required_type {
+                        return Err(Box::new(IncorrectDatatype));
                     }
                 }
 
@@ -414,11 +403,11 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
 fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<(), Box<dyn Error>> {
     match &node {
         ASTNode::Expression {lhs, rhs, operator} => {
-            validate_term_of_type(lhs, required_type, symbol_table, &scope_history)?;
+            validate_term_of_type(lhs, required_type, symbol_table, &scope_history).unwrap();
             match &rhs {
                 None => {},
                 Some(term) => {
-                    validate_term_of_type(term, required_type, symbol_table, &scope_history)?;
+                    validate_term_of_type(term, required_type, symbol_table, &scope_history).unwrap();
                 }
             }
 
@@ -800,7 +789,29 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                 scope_history.push( *scope );
                 semantic_validation_subtree(statement, &symbol_table, &scope_history)?;
             }
-        }
+        },
+
+        ASTNode::TypeCast {from, into} => {
+            let from_type = match &**from {
+                ASTNode::Identifier(identifier) => symbol_table.get_identifier_type_in_scope(identifier, &scope_history).unwrap(),
+                ASTNode::Value {literal_type, ..} => literal_type.clone(),
+                other => panic!("{:?} is not a valid node for a type cast", other)
+            };
+
+            match from_type {
+                Type::Integer | Type::Long => match into {
+                    Type::Integer | Type::Long => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                },
+
+                Type::Boolean => match into {
+                    Type::Boolean => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                },
+
+                Type::Void => panic!("{:?} cannot be cast to {:?}", from_type, into)
+            }
+        },
 
         _ => {}
     }

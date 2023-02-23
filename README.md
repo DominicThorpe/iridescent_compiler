@@ -47,6 +47,16 @@ let mut int x = 7;
 x = 9;
 ```
 
+We can also cast variables of one type to another with the syntax `<type>(<value>)` where value is set to the type given, so we can do:
+```
+fn long main() {
+  let int x = 5;
+  let long y = long(x);
+
+  return y;
+}
+```
+
 
 ### If, Else if, Else Statements
 
