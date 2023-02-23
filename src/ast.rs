@@ -7,6 +7,7 @@ pub enum Type {
     Byte,
     Integer,
     Long,
+    Char,
     Boolean
 }
 
@@ -19,6 +20,7 @@ pub enum Literal {
     Byte(u8),
     Integer(i16),
     Long(i32),
+    Char(char),
     Boolean(bool)
 }
 
@@ -218,6 +220,7 @@ pub fn get_type_from_string(type_str:&str) -> Type {
         "int" => Type::Integer,
         "bool" => Type::Boolean,
         "long" => Type::Long,
+        "char" => Type::Char,
         _ => panic!("Unknown type {}", type_str)
     } 
 }

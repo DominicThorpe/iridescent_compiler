@@ -13,7 +13,8 @@ pub enum Argument {
     Byte(u8),
     Integer(i16),
     Long(i32),
-    Boolean(bool)
+    Boolean(bool),
+    Char(char)
 }
 
 
@@ -259,7 +260,8 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
                 Literal::Byte(byte) => Argument::Byte(byte),
                 Literal::Integer(int) => Argument::Integer(int),
                 Literal::Long(long) => Argument::Long(long),
-                Literal::Boolean(boolean) => Argument::Boolean(boolean)
+                Literal::Boolean(boolean) => Argument::Boolean(boolean),
+                Literal::Char(character) => Argument::Char(character)
             };
             instructions.push(IntermediateInstr::Push(literal_type.clone(), argument));
         },

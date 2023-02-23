@@ -488,9 +488,11 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
             }
         },
 
-        // 1 numeric argument
+        // 1 boolean argument
         BooleanOperator::Invert => {
+            println!("Htere");
             if lhs_type != &Type::Boolean || rhs_type != &Type::Void {
+                println!("Htere 2");
                 panic!("{:?} is not a valid argument for boolean operator {:?}", lhs_type, operator)
             }
         },
@@ -568,7 +570,7 @@ fn validate_boolean_expr(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
     let lhs_type:Type;
     let mut rhs_type:Option<Type> = None;
     match node {
-        ASTNode::BooleanExpression {lhs, rhs, connector, ..} => {
+        ASTNode::BooleanExpression {lhs, rhs, connector, operator} => {
             match &**lhs {
                 ASTNode::BooleanExpression {..} => {
                     lhs_type = validate_boolean_expr(lhs, required_type, symbol_table, scope_history).unwrap();
@@ -601,6 +603,14 @@ fn validate_boolean_expr(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                     if lhs_type != Type::Boolean || rhs_type.clone().unwrap_or(Type::Boolean) != Type::Boolean {
                         panic!("{:?} and {:?} are not valid arguments for a boolean expression", lhs_type, rhs_type.unwrap_or(Type::Void))
                     }
+                }
+
+                None => {}
+            }
+
+            match operator {
+                Some(operator) => {
+                    validate_boolean_operator_with_args(&lhs_type, &rhs_type.unwrap_or(Type::Void), &operator).unwrap();
                 }
 
                 None => {}
@@ -809,7 +819,8 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             }
         },
 
-        ASTNode::WhileLoop {statements, scope, ..} => {
+        ASTNode::WhileLoop {condition, statements, scope} => {
+            validate_boolean_expr(condition, &Type::Boolean, &symbol_table, &scope_history).unwrap();
             for statement in statements {
                 scope_history.push( *scope );
                 semantic_validation_subtree(statement, &symbol_table, &scope_history)?;
@@ -834,7 +845,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 },
 
-                Type::Void => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                Type::Void | Type::Char => panic!("{:?} cannot be cast to {:?}", from_type, into)
             }
         },
 

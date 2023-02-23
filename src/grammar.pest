@@ -7,12 +7,12 @@ long_literal = @{int_literal ~ "l"}
 byte_literal = @{int_literal ~ "b"}
 float = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
 number = {float | byte_literal | long_literal | int_literal}
-string = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
-char = {"'" ~ ANY ~ "'"}
+string_literal = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
+char_literal = {"'" ~ ANY ~ "'"}
 primitive_type = @{"string" | "char" | "int" | "float" | "void" | "long" | "double" | "bool" | "byte"}
 identifier = @{!(bool_literal ~ !ASCII_ALPHANUMERIC) ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
 bool_literal = {"true" | "false"}
-value = {string | char | float | bool_literal | long_literal | byte_literal | int_literal}
+value = {string_literal | char_literal | float | bool_literal | long_literal | byte_literal | int_literal}
 
 parameter = ${primitive_type ~ WHITESPACE+ ~ identifier}
 param_list = {((parameter ~ ",")* ~ parameter)}

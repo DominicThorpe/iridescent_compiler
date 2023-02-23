@@ -208,4 +208,4 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on adding type casting to the language up to the intermediate code generation phase.
+Currently working on adding the `char`, `string`, `float`, and `double` primitive types to the language up to the intermediate code generation phase.
