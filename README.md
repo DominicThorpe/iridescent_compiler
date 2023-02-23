@@ -152,11 +152,9 @@ Currently, the language supports the following flow control structures:
   - while loops,
   - for loops, 
 
-Ternary structures for assignment in the format 
-```
-let <mutability>? <type> <identifier> = <condition> ? <value if true> : <value if false>;
-```
-are also planned.
+Ternary structures for assignment in the format below are also allowed, but only for variable assignment:
+
+`let <mutability>? <type> <identifier> = <condition> ? <term if true> : <term if false>;`
 
 These shall function much the same as their equivalents in C.
 
