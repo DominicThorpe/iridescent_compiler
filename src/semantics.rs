@@ -678,6 +678,27 @@ fn validate_for_loop_part(node:&ASTNode, symbol_table:&SymbolTable, scope_histor
 
 
 /**
+ * Takes an ASTNode representing a ternary expression and validates that it has the following properties:
+ *   - The condition is valid
+ *   - The terms for if the conditon is true and false are valid
+ *   - The terms for true and false match the required datatype
+ */
+fn validate_ternary_expression(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&Vec<usize>, required_type:&Type) -> Result<(), Box<dyn Error>> {
+    match node {
+        ASTNode::TernaryExpression {condition, if_true, if_false} => {
+            validate_boolean_expr(condition, &Type::Boolean, symbol_table, scope_history).unwrap();
+            validate_term_of_type(if_true, required_type, symbol_table, scope_history).unwrap();
+            validate_term_of_type(if_false, required_type, symbol_table, scope_history).unwrap();
+        },
+
+        other => panic!("{:?} is not a terary expression", other)
+    }
+
+    Ok(())
+}
+
+
+/**
  * Takes an AST node and runs semantic analysis on it to ensure it is valid when the context of the whole program
  * is taken into consideration.
  */
@@ -727,7 +748,11 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
         },
 
         ASTNode::VarDeclStatement {var_type, value, ..} => {
-            validate_expression_of_type(&value, &var_type, symbol_table, &scope_history).unwrap();
+            match &**value {
+                ASTNode::Expression {..} => validate_expression_of_type(&value, &var_type, symbol_table, &scope_history).unwrap(),
+                ASTNode::TernaryExpression {..} => validate_ternary_expression(&value, symbol_table, &scope_history, &var_type).unwrap(),
+                other => panic!("{:?} is not a valid variable declaration expression", other)
+            }
         }
         
         ASTNode::VarAssignStatement {identifier, value} => {

@@ -453,7 +453,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::Continue => {
             instructions.push(IntermediateInstr::Jump(label_context.clone().loop_continue_label.unwrap().to_string()));
-        }
+        },
+
+        ASTNode::TernaryExpression {..} => {}
     }
 }
 

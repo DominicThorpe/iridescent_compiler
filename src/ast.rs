@@ -150,6 +150,12 @@ pub enum ASTNode {
         rhs: Option<Box<ASTNode>>
     },
 
+    TernaryExpression {
+        condition: Box<ASTNode>,
+        if_true: Box<ASTNode>,
+        if_false: Box<ASTNode>
+    },
+
     IfElifElseStatement {
         statements: Vec<ASTNode>
     },

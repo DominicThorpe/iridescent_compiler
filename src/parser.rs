@@ -66,6 +66,7 @@ impl SymbolTable {
 fn get_expr_from_expr_or_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     match pair.as_rule() {
         Rule::expression => build_ast_from_expression(pair),
+        Rule::ternary_expr => build_ast_from_ternary_expr(pair),
         Rule::term => {
             ASTNode::Expression {
                 lhs: Box::new(build_ast_from_term(pair)),
@@ -91,6 +92,24 @@ fn get_file_contents(filename:&str) -> Result<String, Box<dyn Error>> {
     file.read_to_string(&mut contents)?;
 
     Ok(contents)
+}
+
+
+/**
+ * Takes a `Pair` representing a ternary expression and returns a subtree of the AST representing that
+ * node, including children.
+ */
+fn build_ast_from_ternary_expr(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.into_inner();
+    let conditon = build_ast_from_boolean_expression(parent.next().unwrap());
+    let if_true = build_ast_from_term(parent.next().unwrap());
+    let if_false = build_ast_from_term(parent.next().unwrap());
+
+    ASTNode::TernaryExpression {
+        condition: Box::new(conditon),
+        if_true: Box::new(if_true),
+        if_false: Box::new(if_false)
+    }
 }
 
 
