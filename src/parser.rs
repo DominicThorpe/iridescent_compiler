@@ -101,6 +101,11 @@ fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     let mut parent = pair.clone().into_inner();
     let value = parent.next().unwrap();
     match value.as_rule() {
+        Rule::byte_literal => ASTNode::Value {
+            literal_type: Type::Byte,
+            value: Literal::Byte(u8::try_from(get_int_from_str_literal(value.as_str())).ok().expect("Could not convert int literal to i16"))
+        },
+
         Rule::int_literal => ASTNode::Value {
             literal_type: Type::Integer, 
             value: Literal::Integer(i16::try_from(get_int_from_str_literal(value.as_str())).ok().expect("Could not convert int literal to i16"))

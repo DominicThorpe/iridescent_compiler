@@ -307,7 +307,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 
         ASTNode::ForLoop {statements, scope, control_identifier, control_type, ..} => {
             match control_type {
-                Type::Integer | Type::Long => {},
+                Type::Integer | Type::Long | Type::Byte => {},
                 other => panic!("For loop control variable must be int or long, not {:?}", other)
             }
 
@@ -347,6 +347,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
  * Verifies that the given expression node has a child of the correct type
  */
 fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<(), Box<dyn Error>> {
+    println!("Got: {:?}", node);
     match node {
         ASTNode::Term { child } => {
             match &**child {
@@ -483,7 +484,7 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
 
         // must have 2 numeric arguments
         BooleanOperator::Greater | BooleanOperator::GreaterOrEqual | BooleanOperator::Less | BooleanOperator::LessOrEqual => {
-            if (lhs_type != rhs_type) || (lhs_type != &Type::Integer && lhs_type != &Type::Long) {
+            if (lhs_type != rhs_type) || (lhs_type != &Type::Integer && lhs_type != &Type::Long && lhs_type != &Type::Byte) {
                 panic!("{:?} and {:?} are not valid datatype arguments for boolean operator {:?}", lhs_type, rhs_type, operator)
             }
         },
@@ -662,11 +663,11 @@ fn validate_for_loop_part(node:&ASTNode, symbol_table:&SymbolTable, scope_histor
     semantic_validation_subtree(node, &symbol_table, &scope_history)?;
     match node {
         ASTNode::Expression {..} => {
-            validate_expression_of_type(node, control_type, symbol_table, scope_history)?;
+            validate_expression_of_type(node, control_type, symbol_table, scope_history).unwrap();
         },
 
         ASTNode::Term {..} => {
-            validate_term_of_type(node, control_type, symbol_table, scope_history)?;
+            validate_term_of_type(node, control_type, symbol_table, scope_history).unwrap();
         },
 
         other => panic!("{:?} is not a valid loop control statement argument", other)
@@ -799,8 +800,8 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             };
 
             match from_type {
-                Type::Integer | Type::Long => match into {
-                    Type::Integer | Type::Long => {},
+                Type::Byte | Type::Integer | Type::Long => match into {
+                    Type::Byte | Type::Integer | Type::Long => {},
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 },
 

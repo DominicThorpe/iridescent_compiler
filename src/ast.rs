@@ -4,6 +4,7 @@
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Type {
     Void,
+    Byte,
     Integer,
     Long,
     Boolean
@@ -15,6 +16,7 @@ pub enum Type {
  */
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Literal {
+    Byte(u8),
     Integer(i16),
     Long(i32),
     Boolean(bool)
@@ -206,6 +208,7 @@ pub enum ASTNode {
 pub fn get_type_from_string(type_str:&str) -> Type {
     match type_str {
         "void" => Type::Void,
+        "byte" => Type::Byte,
         "int" => Type::Integer,
         "bool" => Type::Boolean,
         "long" => Type::Long,
@@ -325,9 +328,9 @@ pub fn get_mutability_from_str(mutability_str:&str) -> Mutability {
  * `assert_eq!(get_int_from_str_literal("20"), 20);`
  */
 pub fn get_int_from_str_literal(literal:&str) -> i64 {
-    let literal = match literal.ends_with("l") {
-        true => &literal[0..literal.len() - 1],
-        false => literal
+    let mut literal = literal;
+    if literal.ends_with("l") | literal.ends_with("b") {
+        literal = &literal[0..literal.len() - 1];
     };
 
     if literal.starts_with("0b") {
