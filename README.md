@@ -126,9 +126,21 @@ Currently, parameters are not supported, however, they will function similar to 
 
 ### Datatypes
 
-Currently, only the `int` (signed 16 bit) datatype is available, and the `void` datatype is available as a return type. 
+The following datatypes are currently available:
+  - `int` - signed integer, min 16 bits
+  - `long` - signed integer, min 32 bits
+  - `byte` - unsigned 8-bit integer, no size variation
+  - `void` - available only as a return value, cannot be used as variable type
 
-In future I plan to add support for `float` (signed 32 bit) numbers, `long` (signed 32 bit) and `byte` (unsigned 8 bit) integers, as well as `char` and `string` datatypes, which will all be primitives. There will also be structs, arrays, and pointers built into the language.
+In future I plan to add support for `float` (signed 32 bit) numbers, as well as `char` and `string` datatypes, which will all be primitives. There will also be structs, arrays, and pointers built into the language.
+
+To change the type of a variable, use the syntax `<new type>(<value or variable>)`, so you could have:
+```
+fn main() {
+  let int x = 5;
+  let long y = (5, long(x))+;
+}
+```
 
 
 ### Control Structures
@@ -138,10 +150,13 @@ Currently, the language supports the following flow control structures:
   - if, else-if, else (IEIE) structures,
   - indefinite loops
   - while loops,
-
-The following are also planned:
   - for loops, 
-  - ternary structures
+
+Ternary structures for assignment in the format 
+```
+let <mutability>? <type> <identifier> = <condition> ? <value if true> : <value if false>;
+```
+are also planned.
 
 These shall function much the same as their equivalents in C.
 
@@ -152,10 +167,11 @@ Statements are the basic non-flow-control actions the program can take. Currentl
   - function return
   - variable declaration (mutable and immutable)
   - variable assignment
+  - type casting
 
 In the future, the following shall also be supported:
-  - print
-  - variable casting (may be moved to an expression)
+  - stdio print
+  - stdio input
 
 
 ### Expressions
