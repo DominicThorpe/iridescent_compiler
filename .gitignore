@@ -1,3 +1,4 @@
 /target
 *.iri
+*.asm
 Cargo.lock

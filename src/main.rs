@@ -1,4 +1,5 @@
 mod frontend;
+mod backend;
 mod errors;
 
 extern crate pest;
@@ -14,7 +15,9 @@ fn main() {
     frontend::semantics::semantic_validation(ast.clone(), &symbol_table).unwrap();
     let instructions = frontend::intermediate_gen::generate_program_intermediate(ast);
 
-    for instr in instructions {
+    for instr in &instructions {
         println!("{}", instr);
     }
+
+    backend::mips::generate_mips(instructions, "mips.asm").unwrap();
 }

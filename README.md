@@ -131,8 +131,12 @@ The following datatypes are currently available:
   - `long` - signed integer, min 32 bits
   - `byte` - unsigned 8-bit integer, no size variation
   - `void` - available only as a return value, cannot be used as variable type
+  - `float` - signed 16 or 32-bit floating point number
+  - `double` - signed 32 or 64-bit floating point number
+  - `char` - a single character
+  - `string` - a string of characters
 
-In future I plan to add support for `float` (signed 32 bit) numbers, as well as `char` and `string` datatypes, which will all be primitives. There will also be structs, arrays, and pointers built into the language.
+There will also eventually be structs, arrays, and pointers built into the language once the backend has progressed sufficiently.
 
 To change the type of a variable, use the syntax `<new type>(<value or variable>)`, so you could have:
 ```
@@ -166,8 +170,6 @@ Statements are the basic non-flow-control actions the program can take. Currentl
   - variable declaration (mutable and immutable)
   - variable assignment
   - type casting
-
-In the future, the following shall also be supported:
   - stdio print
   - stdio input
 
@@ -208,4 +210,10 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on adding the `char`, `string`, `float`, and `double` primitive types to the language up to the intermediate code generation phase.
+Currently working on implementing basic integer return functions in the MIPS backend in the form:
+
+```
+fn int main() {
+  return 2;
+}
+```
