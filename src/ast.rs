@@ -205,6 +205,10 @@ pub enum ASTNode {
         scope: usize
     },
 
+    PrintStatement {
+        terms: Vec<ASTNode>
+    },
+
     Identifier(String),
     Break,
     Continue

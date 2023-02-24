@@ -474,7 +474,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             gen_intermediate_code(if_false, instructions, memory_map, None, func_name, label_context);
 
             instructions.push(IntermediateInstr::Label(return_label));
-        }
+        },
+
+        _ => {}
     }
 }
 

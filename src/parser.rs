@@ -662,11 +662,36 @@ fn build_ast_from_for_loop(pair: pest::iterators::Pair<Rule>, symbol_table: &mut
 }
 
 
+/**
+ * Takes a `Pair` representing a `break` or `continue` statement and dispatches it to the 
+ * relevant AST builder function.
+ */
 fn build_ast_from_loop_ctrl(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     match pair.as_rule() {
         Rule::continue_stmt => ASTNode::Continue,
         Rule::break_stmt => ASTNode::Break,
         other => panic!("{:?} is not a valid return or continue statement", other)
+    }
+}
+
+
+/**
+ * Takes a `Pair` representing a print statement and returns it as a subtree of the AST, 
+ * including children nodes.
+ */
+fn build_ast_from_print(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.into_inner();
+    let mut terms = vec![];
+    while let Some(token) = parent.next() {
+        match token.as_rule() {
+            Rule::identifier => terms.push(build_ast_from_identifier(token)),
+            Rule::value => terms.push(build_ast_from_value(token)),
+            other => panic!("Cannot print type: {:?}", other)
+        }
+    }
+
+    ASTNode::PrintStatement {
+        terms: terms
     }
 }
 
@@ -688,6 +713,7 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mu
         Rule::for_loop => build_ast_from_for_loop(pair.into_inner().next().unwrap(), symbol_table),
         Rule::continue_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
         Rule::break_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
+        Rule::print => build_ast_from_print(pair.into_inner().next().unwrap()),
         _ => panic!("Could not parse statement \"{:?}\"", token.as_rule())
     }
 }

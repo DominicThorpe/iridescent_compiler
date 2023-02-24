@@ -44,7 +44,7 @@ value_list = {((identifier | value) ~ ",")* ~ (identifier | value)}
 function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ "{" ~ statement* ~ "}"}
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
-print = {"print" ~ ((identifier | value ) ~ ",")* ~ (identifier | value) ~ ";"}
+print = {"print" ~ "<<" ~ ((identifier | value) ~ "<<")* ~ (identifier | value) ~ ";"}
 binary_operator = {"+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<"}
 unary_operator = {"~" | "!" | "-"}
 term = {type_cast 
