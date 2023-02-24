@@ -463,6 +463,18 @@ fn find_valid_type_of_node(node:&ASTNode, symbol_table:&SymbolTable, scope_histo
 }
 
 
+fn check_if_type_numeric(primitive_type:&Type) -> bool {
+    match primitive_type {
+        Type::Integer
+         | Type::Long
+         | Type::Byte
+         | Type::Float
+         | Type::Double => true,
+         _ => return false
+    }
+}
+
+
 /**
  * Checks that the arguments to a boolean operator are valid for that operator, such as only allowing >= 
  * to be used on a pair of integer arguments.
@@ -483,7 +495,7 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
 
         // must have 2 numeric arguments
         BooleanOperator::Greater | BooleanOperator::GreaterOrEqual | BooleanOperator::Less | BooleanOperator::LessOrEqual => {
-            if (lhs_type != rhs_type) || (lhs_type != &Type::Integer && lhs_type != &Type::Long && lhs_type != &Type::Byte) {
+            if (lhs_type != rhs_type) || !check_if_type_numeric(lhs_type) {
                 panic!("{:?} and {:?} are not valid datatype arguments for boolean operator {:?}", lhs_type, rhs_type, operator)
             }
         },
@@ -835,8 +847,8 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             };
 
             match from_type {
-                Type::Byte | Type::Integer | Type::Long => match into {
-                    Type::Byte | Type::Integer | Type::Long => {},
+                Type::Byte | Type::Integer | Type::Long | Type::Float | Type::Double => match into {
+                    Type::Byte | Type::Integer | Type::Long | Type::Float | Type::Double => {},
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 },
 

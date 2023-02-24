@@ -2,30 +2,55 @@ WHITESPACE = _{" " | NEWLINE }
 COMMENT = _{("/*" ~ (!"*/" ~ ANY)* ~ "*/")}
 program = {SOI ~ function_decl* ~ EOI}
 
+identifier = @{!(bool_literal ~ !ASCII_ALPHANUMERIC) ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
 int_literal = @{("0b" ~ ("0" | "1")+) | ("0x" ~ ASCII_HEX_DIGIT+) | ASCII_DIGIT+}
 long_literal = @{int_literal ~ "l"}
 byte_literal = @{int_literal ~ "b"}
-float = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
-number = {float | byte_literal | long_literal | int_literal}
+float_literal = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
+double_literal = @{float_literal ~ "d"}
+number = {float_literal | byte_literal | long_literal | int_literal}
 string_literal = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
 char_literal = {"'" ~ ANY ~ "'"}
-primitive_type = @{"string" | "char" | "int" | "float" | "void" | "long" | "double" | "bool" | "byte"}
-identifier = @{!(bool_literal ~ !ASCII_ALPHANUMERIC) ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")*}
 bool_literal = {"true" | "false"}
-value = {string_literal | char_literal | float | bool_literal | long_literal | byte_literal | int_literal}
+
+primitive_type = @{"string" 
+				   | "char" 
+				   | "int" 
+				   | "float" 
+				   | "void" 
+				   | "long" 
+				   | "double" 
+				   | "bool" 
+				   | "byte"
+				  }
+
+value = {string_literal 
+		 | char_literal 
+		 | double_literal 
+		 | float_literal 
+		 | bool_literal 
+		 | long_literal 
+		 | byte_literal 
+		 | int_literal
+		}
 
 parameter = ${primitive_type ~ WHITESPACE+ ~ identifier}
-param_list = {((parameter ~ ",")* ~ parameter)}
-value_list = {(((identifier | value) ~ ",")* ~ (identifier | value))}
+param_list = {(parameter ~ ",")* ~ parameter}
+value_list = {((identifier | value) ~ ",")* ~ (identifier | value)}
 function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ "{" ~ statement* ~ "}"}
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
 print = {"print" ~ ((identifier | value ) ~ ",")* ~ (identifier | value) ~ ";"}
-binary_operator = {("+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<")}
+binary_operator = {"+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<"}
 unary_operator = {"~" | "!" | "-"}
-term = {type_cast | function_call | expression | identifier | value}
+term = {type_cast 
+		| function_call 
+		| expression 
+		| identifier 
+		| value
+	   }
 expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
-				| "(" ~ term ~ ")" ~ unary_operator}
+			  | "(" ~ term ~ ")" ~ unary_operator}
 
 continue_stmt = {"continue" ~ ";"}
 break_stmt = {"break" ~ ";"}
@@ -52,7 +77,7 @@ elif_stmt = {"else" ~ "if" ~ boolean_expr ~ "{" ~ statement* ~ "}"}
 else_stmt = {"else" ~ "{" ~ statement* ~ "}"}
 if_structure = {if_stmt ~ elif_stmt* ~ else_stmt?}
 
-mutability_mod = {("mut" | "const")}
+mutability_mod = {"mut" | "const"}
 var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (expression | ternary_expr | term) ~ ";"}
 var_assign = {identifier ~ "=" ~ (expression | ternary_expr | term) ~ ";"}
 return_stmt = {"return " ~ (expression | term) ~ ";"}

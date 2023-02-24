@@ -8,20 +8,24 @@ pub enum Type {
     Integer,
     Long,
     Char,
-    Boolean
+    Boolean,
+    Float,
+    Double
 }
 
 
 /**
  * Represents a literal of any primitive datatype.
  */
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Literal {
     Byte(u8),
     Integer(i16),
     Long(i32),
     Char(char),
-    Boolean(bool)
+    Boolean(bool),
+    Float(f32),
+    Double(f64)
 }
 
 
@@ -88,7 +92,7 @@ pub enum Mutability {
  *  - literal value
  *  - datatype
  */
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum ASTNode {
     Function {
         return_type: Type,
@@ -221,6 +225,8 @@ pub fn get_type_from_string(type_str:&str) -> Type {
         "bool" => Type::Boolean,
         "long" => Type::Long,
         "char" => Type::Char,
+        "float" => Type::Float,
+        "double" => Type::Double, 
         _ => panic!("Unknown type {}", type_str)
     } 
 }

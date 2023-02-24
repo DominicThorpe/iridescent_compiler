@@ -145,6 +145,16 @@ fn build_ast_from_value(pair: pest::iterators::Pair<Rule>) -> ASTNode {
             value: Literal::Boolean(get_bool_from_str_literal(value.as_str()))
         },
 
+        Rule::float_literal => ASTNode::Value {
+            literal_type: Type::Float,
+            value: Literal::Float(value.as_str().parse().expect("Could not convert int literal to f32"))
+        },
+
+        Rule::double_literal => ASTNode::Value {
+            literal_type: Type::Double,
+            value: Literal::Double(value.as_str()[..value.as_str().len() - 1].parse().expect("Could not convert int literal to f64"))
+        },
+
         _ => panic!("Could not parse value {:?}", pair.as_str())
     }
 }

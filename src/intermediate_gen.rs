@@ -14,7 +14,9 @@ pub enum Argument {
     Integer(i16),
     Long(i32),
     Boolean(bool),
-    Char(char)
+    Char(char),
+    Float(f32),
+    Double(f64)
 }
 
 
@@ -261,7 +263,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
                 Literal::Integer(int) => Argument::Integer(int),
                 Literal::Long(long) => Argument::Long(long),
                 Literal::Boolean(boolean) => Argument::Boolean(boolean),
-                Literal::Char(character) => Argument::Char(character)
+                Literal::Char(character) => Argument::Char(character),
+                Literal::Float(float) => Argument::Float(float),
+                Literal::Double(double) => Argument::Double(double)
             };
             instructions.push(IntermediateInstr::Push(literal_type.clone(), argument));
         },
