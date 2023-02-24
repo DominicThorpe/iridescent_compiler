@@ -906,6 +906,11 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             if id_type != Type::String {
                 panic!("Only strings can be the target of an input statement, not {:?}", id_type);
             }
+
+            let mutability = symbol_table.get_mutability_in_scope(identifier, &scope_history).unwrap();
+            if mutability != Mutability::Mutable {
+                panic!("Target of an input statement must be mutable");
+            }
         }
 
         _ => {}
