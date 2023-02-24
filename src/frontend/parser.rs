@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::error::Error;
 use pest::Parser;
 
-use crate::ast::*;
+use super::ast::*;
 
 
 #[derive(Parser)]
