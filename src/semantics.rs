@@ -512,7 +512,6 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
 
         // 1 boolean argument
         BooleanOperator::Invert => {
-            println!("Htere");
             if lhs_type != &Type::Boolean || rhs_type != &Type::Void {
                 println!("Htere 2");
                 panic!("{:?} is not a valid argument for boolean operator {:?}", lhs_type, operator)
@@ -878,6 +877,27 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                 }
 
                 Type::Void => panic!("{:?} cannot be cast to {:?}", from_type, into)
+            }
+        },
+
+        ASTNode::PrintStatement {terms} => {
+            for term in terms {
+                match term {
+                    ASTNode::Value {literal_type, ..} => {
+                        if literal_type != &Type::String {
+                            panic!("Only strings can be printed, not {:?}", literal_type);
+                        }
+                    },
+
+                    ASTNode::Identifier(identifier) => {
+                        let id_type = symbol_table.get_identifier_type_in_scope(identifier, &scope_history).unwrap();
+                        if id_type != Type::String {
+                            panic!("Only strings can be printed, not {:?}", id_type);
+                        }
+                    }
+
+                    other => panic!("{:?} nodes cannot be printed", other)
+                }
             }
         },
 
