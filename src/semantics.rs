@@ -418,7 +418,14 @@ fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:
                 None => {},
                 Some(op) => {
                     match required_type {
-                        Type::Boolean => panic!("{:?} is not a valid operator for arguments of type {:?}", op, required_type),
+                        Type::Boolean | Type::Char => panic!("{:?} is not a valid operator for arguments of type {:?}", op, required_type),
+                        
+                        Type::String => {
+                            if op != &Operator::Addition {
+                                panic!("Only the '+' operator (concatenation) can be applied to a string");
+                            }
+                        }
+                        
                         _ => {}
                     }
                 } 
