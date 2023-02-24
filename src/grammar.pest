@@ -45,6 +45,8 @@ function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ 
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
 print = {"print" ~ "<<" ~ ((identifier | value) ~ "<<")* ~ (identifier | value) ~ ";"}
+input = {"input" ~ ">>" ~ identifier ~ ";"}
+
 binary_operator = {"+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<"}
 unary_operator = {"~" | "!" | "-"}
 term = {type_cast 
@@ -58,8 +60,19 @@ expression = {"(" ~ term ~ "," ~ term ~ ")" ~ binary_operator
 
 continue_stmt = {"continue" ~ ";"}
 break_stmt = {"break" ~ ";"}
-statement = !{var_assign | var_decl | return_stmt | for_loop | indef_loop | while_loop
-				| print | if_structure | function_call ~ ";" | continue_stmt | break_stmt}
+statement = !{var_assign 
+			  | var_decl 
+			  | return_stmt 
+			  | for_loop 
+			  | indef_loop 
+			  | while_loop
+			  | print 
+			  | input
+			  | if_structure 
+			  | function_call ~ ";" 
+			  | continue_stmt 
+			  | break_stmt
+			 }
 ternary_expr = {boolean_expr ~ "?" ~ term ~ ":" ~ term}
 type_cast = {primitive_type ~ "(" ~ (identifier | value) ~ ")"}
 

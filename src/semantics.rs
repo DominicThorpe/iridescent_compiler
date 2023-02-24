@@ -901,6 +901,13 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             }
         },
 
+        ASTNode::InputStatement {identifier} => {
+            let id_type = symbol_table.get_identifier_type_in_scope(identifier, &scope_history).unwrap();
+            if id_type != Type::String {
+                panic!("Only strings can be the target of an input statement, not {:?}", id_type);
+            }
+        }
+
         _ => {}
     }
 

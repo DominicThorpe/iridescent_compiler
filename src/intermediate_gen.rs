@@ -48,6 +48,7 @@ pub enum IntermediateInstr {
     LessEqual,
     Equal,
     NotEqual,
+    In,
     Out,
     Jump(String),
     JumpZero(String),
@@ -486,6 +487,12 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
                 gen_intermediate_code(term, instructions, memory_map, None, func_name, label_context);
                 instructions.push(IntermediateInstr::Out);
             }
+        },
+
+        ASTNode::InputStatement {identifier} => {
+            instructions.push(IntermediateInstr::In);
+            let metadata = memory_map.get(&get_var_repr(func_name, identifier)).unwrap();
+            instructions.push(IntermediateInstr::Store(metadata.var_type.clone(), metadata.address));
         }
     }
 }

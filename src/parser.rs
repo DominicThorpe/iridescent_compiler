@@ -697,6 +697,20 @@ fn build_ast_from_print(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
 
 /**
+ * Takes a `Pair` representing an input statement and returns it as a subtree of the AST, 
+ * including children nodes.
+ */
+fn build_ast_from_input(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.into_inner();
+    let output = parent.next().unwrap().as_str().to_string();
+
+    ASTNode::InputStatement {
+        identifier: output
+    }
+}
+
+
+/**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
 fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
@@ -714,6 +728,7 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mu
         Rule::continue_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
         Rule::break_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
         Rule::print => build_ast_from_print(pair.into_inner().next().unwrap()),
+        Rule::input => build_ast_from_input(pair.into_inner().next().unwrap()),
         _ => panic!("Could not parse statement \"{:?}\"", token.as_rule())
     }
 }
