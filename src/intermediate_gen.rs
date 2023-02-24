@@ -16,7 +16,8 @@ pub enum Argument {
     Boolean(bool),
     Char(char),
     Float(f32),
-    Double(f64)
+    Double(f64),
+    String(String)
 }
 
 
@@ -258,14 +259,15 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::Term {child} => gen_intermediate_code(child, instructions, memory_map, None, func_name, label_context),
 
         ASTNode::Value {literal_type, value} => {
-            let argument = match *value {
+            let argument = match value.clone() {
                 Literal::Byte(byte) => Argument::Byte(byte),
                 Literal::Integer(int) => Argument::Integer(int),
                 Literal::Long(long) => Argument::Long(long),
                 Literal::Boolean(boolean) => Argument::Boolean(boolean),
                 Literal::Char(character) => Argument::Char(character),
                 Literal::Float(float) => Argument::Float(float),
-                Literal::Double(double) => Argument::Double(double)
+                Literal::Double(double) => Argument::Double(double),
+                Literal::String(string) => Argument::String(string),
             };
             instructions.push(IntermediateInstr::Push(literal_type.clone(), argument));
         },

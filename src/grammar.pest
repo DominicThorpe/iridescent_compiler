@@ -8,10 +8,14 @@ long_literal = @{int_literal ~ "l"}
 byte_literal = @{int_literal ~ "b"}
 float_literal = @{ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+}
 double_literal = @{float_literal ~ "d"}
-number = {float_literal | byte_literal | long_literal | int_literal}
 string_literal = @{"\"" ~ (!"\"" ~ ANY)* ~ "\""}
 char_literal = {"'" ~ ANY ~ "'"}
 bool_literal = {"true" | "false"}
+number = {float_literal 
+		  | byte_literal 
+		  | long_literal 
+		  | int_literal
+		 }
 
 primitive_type = @{"string" 
 				   | "char" 

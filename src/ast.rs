@@ -10,7 +10,8 @@ pub enum Type {
     Char,
     Boolean,
     Float,
-    Double
+    Double,
+    String
 }
 
 
@@ -25,7 +26,8 @@ pub enum Literal {
     Char(char),
     Boolean(bool),
     Float(f32),
-    Double(f64)
+    Double(f64),
+    String(String)
 }
 
 
@@ -227,6 +229,7 @@ pub fn get_type_from_string(type_str:&str) -> Type {
         "char" => Type::Char,
         "float" => Type::Float,
         "double" => Type::Double, 
+        "string" => Type::String,
         _ => panic!("Unknown type {}", type_str)
     } 
 }

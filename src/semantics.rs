@@ -358,9 +358,10 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                         }
                     }
                 },
-
+                
                 ASTNode::Value {literal_type, ..} => {
                     if literal_type != required_type {
+                        println!("{:?} == {:?}", literal_type, required_type);
                         return Err(Box::new(IncorrectDatatype));
                     }
                 },
@@ -444,7 +445,9 @@ fn find_valid_type_of_node(node:&ASTNode, symbol_table:&SymbolTable, scope_histo
                 None => {},
                 Some(rhs) => {
                     let rhs_type = find_valid_type_of_node(rhs, symbol_table, scope_history).unwrap();
-                    if lhs_type == rhs_type {
+                    if (lhs_type == rhs_type && lhs_type != Type::Char) 
+                        || (lhs_type == Type::String && rhs_type == Type::Char)
+                        || (rhs_type == Type::Char && lhs_type == Type::String) {
                         return Ok(lhs_type);
                     } else {
                         panic!("Boolean term validation found term of {:?} and {:?} mismatched datatypes", lhs_type, rhs_type)
@@ -857,7 +860,17 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 },
 
-                Type::Void | Type::Char => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                Type::Char => match into {
+                    Type::Char | Type::String => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                }
+
+                Type::String => match into {
+                    Type::String => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                }
+
+                Type::Void => panic!("{:?} cannot be cast to {:?}", from_type, into)
             }
         },
 
