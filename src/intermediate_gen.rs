@@ -48,6 +48,7 @@ pub enum IntermediateInstr {
     LessEqual,
     Equal,
     NotEqual,
+    Out,
     Jump(String),
     JumpZero(String),
     JumpNotZero(String),
@@ -59,7 +60,7 @@ pub enum IntermediateInstr {
     FuncStart(String),
     FuncEnd(String),
     Label(String),
-    Cast(Type, Type)
+    Cast(Type, Type),
 }
 
 impl fmt::Display for IntermediateInstr {
@@ -462,21 +463,30 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         },
 
         ASTNode::TernaryExpression {condition, if_true, if_false} => {
+            // get flags and generate condition code
             let return_label = get_next_label();
             let false_label = get_next_label();
             gen_intermediate_code(condition, instructions, memory_map, None, func_name, label_context);
 
+            // jump to false, generate code for true value, jump to end
             instructions.push(IntermediateInstr::JumpZero(false_label.clone()));
             gen_intermediate_code(if_true, instructions, memory_map, None, func_name, label_context);
             instructions.push(IntermediateInstr::Jump(return_label.to_string()));
 
+            // generate code for false value
             instructions.push(IntermediateInstr::Label(false_label));
             gen_intermediate_code(if_false, instructions, memory_map, None, func_name, label_context);
 
+            // end of the expression
             instructions.push(IntermediateInstr::Label(return_label));
         },
 
-        _ => {}
+        ASTNode::PrintStatement {terms} => {
+            for term in terms {
+                gen_intermediate_code(term, instructions, memory_map, None, func_name, label_context);
+                instructions.push(IntermediateInstr::Out);
+            }
+        }
     }
 }
 
