@@ -10,7 +10,7 @@ use std::error::Error;
  */
 #[derive(Clone, Debug)]
 pub struct SymbolTable {
-    rows: Vec<SymbolTableRow>
+    pub rows: Vec<SymbolTableRow>
 }
 
 impl SymbolTable {
@@ -128,6 +128,7 @@ impl SymbolTable {
 pub enum SymbolTableRow {
     Variable {
         identifier: String,
+        function_id: String,
         primitive_type: Type,
         mutability: Mutability,
         parent_scope: usize,
@@ -230,7 +231,7 @@ impl SymbolTableRow {
  * reference, or calls itself recursively on each of that row's children to generate additional 
  * rows for them.
  */
-fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>) {
+fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Option<SymbolTableRow>, func_name:&str) {
     match subtree.clone() {
         ASTNode::Function {return_type, identifier, statements, parameters, scope} => {
             let param_types = parameters.clone().into_iter().map(|param| {
@@ -241,7 +242,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             }).collect();
 
             let function_row = SymbolTableRow::Function {
-                identifier: identifier,
+                identifier: identifier.clone(),
                 return_type: return_type,
                 parameters: param_types,
                 parent_scope: 0,
@@ -250,11 +251,11 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             table.add(function_row.clone());
 
             for param in parameters {
-                generate_sub_symbol_table(param, table, Some(function_row.clone()));
+                generate_sub_symbol_table(param, table, Some(function_row.clone()), &identifier);
             }
 
             for statement in statements {
-                generate_sub_symbol_table(statement, table, Some(function_row.clone()));
+                generate_sub_symbol_table(statement, table, Some(function_row.clone()), &identifier);
             }
         },
 
@@ -262,6 +263,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             table.add(
                 SymbolTableRow::Variable {
                     identifier: identifier,
+                    function_id: func_name.to_string(),
                     primitive_type: param_type,
                     mutability: Mutability::Constant,
                     parent_scope: parent.clone().unwrap().get_scope_id(),
@@ -274,6 +276,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             table.add(
                 SymbolTableRow::Variable {
                     identifier: identifier,
+                    function_id: func_name.to_string(),
                     primitive_type: var_type,
                     mutability: mutability,
                     parent_scope: parent.clone().unwrap().get_scope_id(),
@@ -284,7 +287,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
 
         ASTNode::IfElifElseStatement {statements} => {
             for statement in statements {
-                generate_sub_symbol_table(statement, table, parent.clone());
+                generate_sub_symbol_table(statement, table, parent.clone(), func_name);
             }
         },
 
@@ -301,7 +304,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             table.add(new_row.clone());
 
             for statement in statements {
-                generate_sub_symbol_table(statement, table, Some(new_row.clone()));
+                generate_sub_symbol_table(statement, table, Some(new_row.clone()), func_name);
             }
         },
 
@@ -326,6 +329,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             table.add(
                 SymbolTableRow::Variable {
                     identifier: control_identifier,
+                    function_id: func_name.to_owned(),
                     primitive_type: control_type,
                     mutability: Mutability::Mutable,
                     parent_scope: scope_id,
@@ -334,7 +338,7 @@ fn generate_sub_symbol_table(subtree:ASTNode, table:&mut SymbolTable, parent:Opt
             );
 
             for statement in statements {
-                generate_sub_symbol_table(statement, table, Some(new_row.clone()));
+                generate_sub_symbol_table(statement, table, Some(new_row.clone()), func_name);
             }
         }
 
@@ -946,7 +950,7 @@ pub fn semantic_validation(root:Vec<ASTNode>, symbol_table:&SymbolTable) -> Resu
 pub fn generate_symbol_table(root:Vec<ASTNode>) -> SymbolTable {
     let mut table = SymbolTable { rows: vec![] };
     for node in root {
-        generate_sub_symbol_table(node, &mut table, None);
+        generate_sub_symbol_table(node, &mut table, None, "global");
     }
 
     table
