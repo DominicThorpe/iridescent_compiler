@@ -111,7 +111,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 } else {
                     curr_register = "$t0";
                 }
-                
+
                 match var_type {
                     Type::Integer => {
                         let offset = stack_id_offset_map.get(&id).unwrap();
@@ -127,16 +127,16 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                     Type::Integer => {
                         mips_instrs.push("\tmove $a0, $t0".to_owned());
                     },
-
+    
                     _ => todo!()
                 }
-            }
+            },
 
+            IntermediateInstr::NumNeg => mips_instrs.push(format!("\tsubu {}, $zero, {}", curr_register, curr_register)),
+            
             _ => {}
         }
     }
-
-    println!("{:#?}", stack_id_offset_map);
 
     mips_instrs.push("\n\tli $v0, 10 # halt syscall".to_owned());
     mips_instrs.push("\tsyscall".to_owned());

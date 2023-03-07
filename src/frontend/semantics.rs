@@ -365,7 +365,6 @@ fn validate_term_of_type(node:&ASTNode, required_type:&Type, symbol_table:&Symbo
                 
                 ASTNode::Value {literal_type, ..} => {
                     if literal_type != required_type {
-                        println!("{:?} == {:?}", literal_type, required_type);
                         return Err(Box::new(IncorrectDatatype));
                     }
                 },
@@ -517,7 +516,6 @@ fn validate_boolean_operator_with_args(lhs_type:&Type, rhs_type:&Type, operator:
         // 1 boolean argument
         BooleanOperator::Invert => {
             if lhs_type != &Type::Boolean || rhs_type != &Type::Void {
-                println!("Htere 2");
                 panic!("{:?} is not a valid argument for boolean operator {:?}", lhs_type, operator)
             }
         },
