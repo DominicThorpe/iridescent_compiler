@@ -133,6 +133,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::NumNeg => mips_instrs.push(format!("\tsubu {}, $zero, {}", curr_register, curr_register)),
+            IntermediateInstr::Complement => mips_instrs.push(format!("\tnot {}, {}", curr_register, curr_register)),
+            IntermediateInstr::LogicNeg => mips_instrs.push(format!("\tslt {}, $zero, {}", curr_register, curr_register)),
             
             _ => {}
         }
