@@ -1,13 +1,25 @@
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::error::Error;
+use std::collections::HashMap;
 
 use crate::frontend::intermediate_gen::{IntermediateInstr, Argument};
 use crate::frontend::semantics::{SymbolTable, SymbolTableRow};
 use crate::frontend::ast::Type;
 
 
-fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> i32 {
+#[allow(dead_code)]
+#[derive(Debug)]
+struct VariableTableRow {
+    identifier: usize,
+    offset:usize
+}
+
+
+/**
+ * Calculates the size required for the function frame. Used when invoking a function.
+ */
+fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
     let mut frame_size = 0;
     for symbol in &symbol_table.rows {
         match symbol {
@@ -18,7 +30,9 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> i32 {
 
                 // add the size in bytes of the datatype to the frame size
                 match primitive_type {
-                    Type::Integer => frame_size += 4,
+                    Type::Integer => {
+                        frame_size += 4;
+                    },
                     _ => todo!()
                 }
             },
@@ -31,10 +45,16 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> i32 {
 }
 
 
+/**
+ * Generates the final MIPS assembly code that can then be compiled to native binary using a separate tool.
+ */
 pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:SymbolTable, filename:&str) -> Result<(), Box<dyn Error>> {
     let mut file = OpenOptions::new().write(true).truncate(true).create(true).open(filename)?;
     let mut mips_instrs:Vec<String> = vec![];
-    let mut curr_register = "$t0";
+    let mut stack_id_offset_map: HashMap<usize, usize> = HashMap::new();
+    let mut current_offset:usize = 0;
+
+    let mut curr_register = "$t2";
 
     mips_instrs.push("j main # start program execution\n\n".to_owned());
 
@@ -46,22 +66,40 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 // add label for the function and size required for the stack local variables to the frame pointer
                 mips_instrs.push(format!("{}: ", name));
                 mips_instrs.push(format!("\taddiu $sp, $sp, -{}", frame_size));
-                mips_instrs.push(format!("\tsw $fp, {}($sp)", frame_size - 4));
+                mips_instrs.push(format!("\tsw $fp, 0($sp)"));
                 mips_instrs.push("\tmove $fp, $sp\n".to_string());
             },
 
+            // Push an integer to the stack, use registers $t0 and $t2 to allow for future implementation of long datatype
             IntermediateInstr::Push(_, var) => {
                 match var {
                     Argument::Integer(value) => {
-                        mips_instrs.push(format!("\tli {}, {:?}", curr_register, value));
                         if curr_register == "$t0" {
                             curr_register = "$t2";
                         } else {
                             curr_register = "$t0";
                         }
+                        mips_instrs.push(format!("\tli {}, {:?}", curr_register, value));
                     },
 
                     _ => todo!()
+                }
+            },
+
+            IntermediateInstr::Store(var_type, id) => {
+                match var_type {
+                    Type::Integer => {
+                        if stack_id_offset_map.contains_key(&id) {
+                            panic!("Stack offset map already has key {}", id);
+                        }
+
+                        stack_id_offset_map.insert(id, current_offset);
+                        current_offset += 4;
+
+                        mips_instrs.push(format!("\tsw {}, -{}($sp)", curr_register, current_offset));
+                    },
+
+                    _ => todo!("Only int is currently supported for store instructions!")
                 }
             },
 
@@ -78,6 +116,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             _ => {}
         }
     }
+
+    println!("{:#?}", stack_id_offset_map);
 
     mips_instrs.push("\n\tli $v0, 10 # halt syscall".to_owned());
     mips_instrs.push("\tsyscall".to_owned());
