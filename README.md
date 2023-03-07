@@ -210,10 +210,13 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on implementing basic integer return functions in the MIPS backend in the form:
+Currently working on implementing arithmetic operations on integers for the MIPS architecture, such as:
 
 ```
 fn int main() {
-  return 2;
+  let int x = 5;
+  let int y = 10;
+  let int z = (x, y)+;
+  return z;
 }
 ```

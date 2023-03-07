@@ -91,13 +91,11 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                     Type::Integer => {
                         // Should not be able to have duplicate keys
                         // might move this outside of the match statement?
-                        if stack_id_offset_map.contains_key(&id) {
-                            panic!("Stack offset map already has key {}", id);
+                        if !stack_id_offset_map.contains_key(&id) {
+                            current_offset += 4;
                         }
 
-                        current_offset += 4;
                         stack_id_offset_map.insert(id, current_offset);
-
                         mips_instrs.push(format!("\tsw {}, -{}($sp)", curr_register, current_offset));
                     },
 
