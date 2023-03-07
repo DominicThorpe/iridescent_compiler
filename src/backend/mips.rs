@@ -89,14 +89,33 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::Store(var_type, id) => {
                 match var_type {
                     Type::Integer => {
+                        // Should not be able to have duplicate keys
+                        // might move this outside of the match statement?
                         if stack_id_offset_map.contains_key(&id) {
                             panic!("Stack offset map already has key {}", id);
                         }
 
-                        stack_id_offset_map.insert(id, current_offset);
                         current_offset += 4;
+                        stack_id_offset_map.insert(id, current_offset);
 
                         mips_instrs.push(format!("\tsw {}, -{}($sp)", curr_register, current_offset));
+                    },
+
+                    _ => todo!("Only int is currently supported for store instructions!")
+                }
+            },
+
+            IntermediateInstr::Load(var_type, id) => {
+                if curr_register == "$t0" {
+                    curr_register = "$t2";
+                } else {
+                    curr_register = "$t0";
+                }
+                
+                match var_type {
+                    Type::Integer => {
+                        let offset = stack_id_offset_map.get(&id).unwrap();
+                        mips_instrs.push(format!("\tlw {}, -{}($sp)", curr_register, offset));
                     },
 
                     _ => todo!("Only int is currently supported for store instructions!")
