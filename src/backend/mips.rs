@@ -52,9 +52,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
     let mut file = OpenOptions::new().write(true).truncate(true).create(true).open(filename)?;
     let mut mips_instrs:Vec<String> = vec![];
     let mut stack_id_offset_map: HashMap<usize, usize> = HashMap::new();
-    let mut current_offset:usize = 0;
-
-    let mut curr_register = "$t2";
+    let mut current_var_offset:usize = 0;
+    let mut current_stack_offset:i64 = 0;
 
     mips_instrs.push("j main # start program execution\n\n".to_owned());
 
@@ -74,12 +73,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::Push(_, var) => {
                 match var {
                     Argument::Integer(value) => {
-                        if curr_register == "$t0" {
-                            curr_register = "$t2";
-                        } else {
-                            curr_register = "$t0";
-                        }
-                        mips_instrs.push(format!("\tli {}, {:?}", curr_register, value));
+                        current_stack_offset += 4;
+                        mips_instrs.push(format!("\tli $t4, {:?}", value));
+                        mips_instrs.push(format!("\tsw $t4, {}($sp)\n", current_stack_offset));
                     },
 
                     _ => todo!()
@@ -92,11 +88,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         // Should not be able to have duplicate keys
                         // might move this outside of the match statement?
                         if !stack_id_offset_map.contains_key(&id) {
-                            current_offset += 4;
+                            current_var_offset += 4;
                         }
 
-                        stack_id_offset_map.insert(id, current_offset);
-                        mips_instrs.push(format!("\tsw {}, -{}($sp)", curr_register, current_offset));
+                        stack_id_offset_map.insert(id, current_var_offset);
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, -{}($sp)\n", current_var_offset));
+
+                        current_stack_offset -= 4;
                     },
 
                     _ => todo!("Only int is currently supported for store instructions!")
@@ -104,16 +103,13 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::Load(var_type, id) => {
-                if curr_register == "$t0" {
-                    curr_register = "$t2";
-                } else {
-                    curr_register = "$t0";
-                }
-
                 match var_type {
                     Type::Integer => {
+                        current_stack_offset += 4;
+
                         let offset = stack_id_offset_map.get(&id).unwrap();
-                        mips_instrs.push(format!("\tlw {}, -{}($sp)", curr_register, offset));
+                        mips_instrs.push(format!("\tlw $t0, -{}($sp)", offset));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
                     },
 
                     _ => todo!("Only int is currently supported for store instructions!")
@@ -123,16 +119,38 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::Return(return_type) => {
                 match return_type {
                     Type::Integer => {
-                        mips_instrs.push("\tmove $a0, $t0".to_owned());
+                        mips_instrs.push(format!("\tlw $a0, {}($sp)\n", current_stack_offset));
                     },
     
                     _ => todo!()
                 }
             },
 
-            IntermediateInstr::NumNeg => mips_instrs.push(format!("\tsubu {}, $zero, {}", curr_register, curr_register)),
-            IntermediateInstr::Complement => mips_instrs.push(format!("\tnot {}, {}", curr_register, curr_register)),
-            IntermediateInstr::LogicNeg => mips_instrs.push(format!("\tslt {}, $zero, {}", curr_register, curr_register)),
+            IntermediateInstr::Add => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tadd $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::NumNeg => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tsubu $t0, $zero, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+            },
+
+            IntermediateInstr::Complement => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tnot $t0, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+            },
+
+            IntermediateInstr::LogicNeg => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+            }
             
             _ => {}
         }
