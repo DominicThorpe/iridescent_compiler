@@ -142,6 +142,22 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 current_stack_offset -= 4;
             },
 
+            IntermediateInstr::Mult => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tmul $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::Div => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tdiv $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
             IntermediateInstr::NumNeg => {
                 mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
                 mips_instrs.push(format!("\tsubu $t0, $zero, $t0"));
