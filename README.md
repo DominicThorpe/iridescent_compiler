@@ -210,4 +210,32 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on implementing bitwise logical operations on integers for the MIPS architecture.
+Currently working on implementing target code generation for the MIPS architecture. The followign features still need to be implemented:
+ - [ ] Function calls
+ - [ ] Returning from functions
+ - [ ] Type casting
+ - [ ] Standard input 
+ - [ ] Standard output
+ - [ ] Non-int datatypes
+   - [ ] long
+   - [ ] byte
+   - [ ] float
+   - [ ] double
+   - [ ] char
+   - [ ] string
+
+
+# The Future
+
+As we eventually want this language to be approximately as powerful as C, the folllowing features will need to be implemented in part 2 of development:
+ - pointers
+ - arrays
+ - file inclusion / linking
+ - structs (maybe also enums?)
+ - possibly macros
+
+I also want to implement some optimisations and QoL features such as:
+ - Constant folding
+ - Removing extraneous stack pushes and pops
+ - Implicit casting between ints/longs and floats/doubles
+ - Built-in string handling functions
