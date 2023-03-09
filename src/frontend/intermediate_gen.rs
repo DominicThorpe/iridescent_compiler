@@ -35,9 +35,9 @@ pub enum IntermediateInstr {
     BitwiseXor,
     Complement,
     LogicNeg,
-    LogicAnd,
-    LogicOr,
-    LogicXor,
+    LogicAnd, // not implemented
+    LogicOr, // not implemented
+    LogicXor, // not implemented
     LeftShiftLogical,
     RightShiftArithmetic,
     RightShiftLogical,
@@ -48,11 +48,11 @@ pub enum IntermediateInstr {
     LessEqual,
     Equal,
     NotEqual,
-    In,
-    Out,
+    In, // not implemented
+    Out, // not implemented
     Jump(String),
     JumpZero(String),
-    Call(String),
+    Call(String), // not implemented
     Push(Type, Argument),
     Load(Type, usize),
     Store(Type, usize),
@@ -60,7 +60,7 @@ pub enum IntermediateInstr {
     FuncStart(String),
     FuncEnd(String),
     Label(String),
-    Cast(Type, Type),
+    Cast(Type, Type), // not implemented
 }
 
 impl fmt::Display for IntermediateInstr {
