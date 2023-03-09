@@ -205,18 +205,9 @@ The functioning of the compiler can be split into the following stages:
   - *Semantic Analysis* - checks the AST for problems taking the context of the whole program into account. Finds problems such as scoping errors, undeclared identifiers, and bad return values.
   - *Intermediate Code Generation* - takes the AST and transforms it into a simple, stack-based language which makes target-code generation easier. It can be used to more easily create code for any target instruction set architecture.
   - *Optimisation* - Takes intermediate code and makes any optimisations it can find, such as removing extraneous load and store instructions and constant folding (**stage not implemented**).
-  - *Target Code Generation* - Takes intermediate code and converts it into the final target code.
+  - *Target Code Generation* - Takes intermediate code and converts it into the final target code (*Currently working on MIPS*).
 
 
 ## State of Development
 
-Currently working on implementing arithmetic operations on integers for the MIPS architecture, such as:
-
-```
-fn int main() {
-  let int x = 5;
-  let int y = 10;
-  let int z = (x, y)+;
-  return z;
-}
-```
+Currently working on implementing bitwise logical operations on integers for the MIPS architecture.

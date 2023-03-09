@@ -21,8 +21,8 @@ pub enum Type {
 #[derive(PartialEq, Debug, Clone)]
 pub enum Literal {
     Byte(u8),
-    Integer(i16),
-    Long(i32),
+    Integer(i32),
+    Long(i64),
     Char(char),
     Boolean(bool),
     Float(f32),

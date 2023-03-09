@@ -11,8 +11,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[derive(Debug)]
 pub enum Argument {
     Byte(u8),
-    Integer(i16),
-    Long(i32),
+    Integer(i32),
+    Long(i64),
     Boolean(bool),
     Char(char),
     Float(f32),
