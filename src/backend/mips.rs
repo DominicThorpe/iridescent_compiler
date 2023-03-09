@@ -223,6 +223,42 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
                 current_stack_offset -= 4;
             },
+
+            IntermediateInstr::Equal => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tseq $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::NotEqual => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsne $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::JumpZero(label) => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tbeqz $t0, {}", label));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::JumpNotZero(label) => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tbnez $t0, {}", label));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::Jump(label) => {
+                mips_instrs.push(format!("\tj {}", label));
+            },
+
+            IntermediateInstr::Label(label) => {
+                mips_instrs.push(format!("{}:", label));
+            }
             
             _ => {}
         }
