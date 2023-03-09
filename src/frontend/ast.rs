@@ -47,7 +47,7 @@ pub enum Operator {
     Or,
     XOr,
     LeftShiftLogical,
-    LeftShiftArithmetic,
+    RightShiftArithmetic,
     RightShiftLogical
 }
 
@@ -316,9 +316,9 @@ pub fn get_binary_operator_from_str(operator_str:&str) -> Operator {
         "&" => Operator::And,
         "|" => Operator::Or,
         "^" => Operator::XOr,
-        ">>" => Operator::LeftShiftLogical,
-        ">>>" => Operator::LeftShiftArithmetic,
-        "<<" => Operator::RightShiftLogical,
+        "<<" => Operator::LeftShiftLogical,
+        ">>>" => Operator::RightShiftArithmetic,
+        ">>" => Operator::RightShiftLogical,
         _ => panic!("Unknown operator {}", operator_str)
     }
 }

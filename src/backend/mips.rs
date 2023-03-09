@@ -198,7 +198,31 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
                 mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
                 mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
-            }
+            },
+
+            IntermediateInstr::LeftShiftLogical => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsllv $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::RightShiftLogical => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsrlv $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::RightShiftArithmetic => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsrav $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
             
             _ => {}
         }

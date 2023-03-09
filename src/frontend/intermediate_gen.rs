@@ -39,7 +39,7 @@ pub enum IntermediateInstr {
     LogicOr,
     LogicXor,
     LeftShiftLogical,
-    LeftShiftArithmetic,
+    RightShiftArithmetic,
     RightShiftLogical,
     NumNeg,
     GreaterThan,
@@ -138,7 +138,7 @@ fn gen_operator_code(operator:&Operator) -> IntermediateInstr {
         Operator::Or => IntermediateInstr::BitwiseOr,
         Operator::XOr => IntermediateInstr::BitwiseXor,
         Operator::LeftShiftLogical => IntermediateInstr::LeftShiftLogical,
-        Operator::LeftShiftArithmetic => IntermediateInstr::LeftShiftArithmetic,
+        Operator::RightShiftArithmetic => IntermediateInstr::RightShiftArithmetic,
         Operator::RightShiftLogical => IntermediateInstr::RightShiftLogical
     }
 }
