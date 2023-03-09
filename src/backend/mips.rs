@@ -242,7 +242,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::GreaterThan => {
                 mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
                 mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tsgt $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsgt $t0, $t2, $t0"));
                 mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
                 current_stack_offset -= 4;
             },
@@ -250,7 +250,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::GreaterEqual => {
                 mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
                 mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tsge $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsge $t0, $t2, $t0"));
                 mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
                 current_stack_offset -= 4;
             },

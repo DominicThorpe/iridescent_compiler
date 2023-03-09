@@ -379,6 +379,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::IndefLoop {statements, ..} => {
             let continue_label = get_next_label();
             let return_label = get_next_label();
+            println!("{} {}", continue_label, return_label);
             label_context.update_continue(continue_label.clone());
             label_context.update_break(return_label.clone());
 
@@ -427,7 +428,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
             // generate condition code
             gen_intermediate_code(limit, instructions, memory_map, None, func_name, label_context);
-            instructions.push(IntermediateInstr::GreaterThan);
+            instructions.push(IntermediateInstr::LessThan);
             instructions.push(IntermediateInstr::JumpZero(return_label.clone()));
 
             // generate statement block code
