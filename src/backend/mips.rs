@@ -85,15 +85,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::Store(var_type, id) => {
                 match var_type {
                     Type::Integer => {
-                        // Should not be able to have duplicate keys
-                        // might move this outside of the match statement?
+                        // if the key does not exist, add a new key to represent a new local variable
                         if !stack_id_offset_map.contains_key(&id) {
                             current_var_offset += 4;
+                            stack_id_offset_map.insert(id, current_var_offset);
                         }
 
-                        stack_id_offset_map.insert(id, current_var_offset);
                         mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tsw $t0, -{}($sp)\n", current_var_offset));
+                        mips_instrs.push(format!("\tsw $t0, -{}($sp)\n", stack_id_offset_map.get(&id).unwrap()));
 
                         current_stack_offset -= 4;
                     },
@@ -240,25 +239,46 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 current_stack_offset -= 4;
             },
 
+            IntermediateInstr::GreaterThan => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsgt $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::GreaterEqual => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsge $t0, $t0, $t2"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::LessThan => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tslt $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
+            IntermediateInstr::LessEqual => {
+                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                mips_instrs.push(format!("\tsle $t0, $t2, $t0"));
+                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                current_stack_offset -= 4;
+            },
+
             IntermediateInstr::JumpZero(label) => {
                 mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tbeqz $t0, {}", label));
+                mips_instrs.push(format!("\tbeqz $t0, {}\n", label));
                 current_stack_offset -= 4;
             },
 
-            IntermediateInstr::JumpNotZero(label) => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tbnez $t0, {}", label));
-                current_stack_offset -= 4;
-            },
-
-            IntermediateInstr::Jump(label) => {
-                mips_instrs.push(format!("\tj {}", label));
-            },
-
-            IntermediateInstr::Label(label) => {
-                mips_instrs.push(format!("{}:", label));
-            }
+            IntermediateInstr::Jump(label) => mips_instrs.push(format!("\tj {}\n", label)),
+            IntermediateInstr::Label(label) => mips_instrs.push(format!("\n\n{}:", label)),
             
             _ => {}
         }

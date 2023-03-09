@@ -52,7 +52,6 @@ pub enum IntermediateInstr {
     Out,
     Jump(String),
     JumpZero(String),
-    JumpNotZero(String),
     Call(String),
     Push(Type, Argument),
     Load(Type, usize),
@@ -429,7 +428,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             // generate condition code
             gen_intermediate_code(limit, instructions, memory_map, None, func_name, label_context);
             instructions.push(IntermediateInstr::GreaterThan);
-            instructions.push(IntermediateInstr::JumpNotZero(return_label.clone()));
+            instructions.push(IntermediateInstr::JumpZero(return_label.clone()));
 
             // generate statement block code
             for statement in statements {
