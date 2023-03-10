@@ -35,9 +35,9 @@ pub enum IntermediateInstr {
     BitwiseXor,
     Complement,
     LogicNeg,
-    LogicAnd, // not implemented
-    LogicOr, // not implemented
-    LogicXor, // not implemented
+    LogicAnd, 
+    LogicOr, 
+    LogicXor, 
     LeftShiftLogical,
     RightShiftArithmetic,
     RightShiftLogical,

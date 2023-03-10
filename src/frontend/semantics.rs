@@ -447,7 +447,7 @@ fn validate_expression_of_type(node:&ASTNode, required_type:&Type, symbol_table:
  * the datatypes of its children and panics if it is not. Otherwise returns the type that the node 
  * would have if evaluated or passed to a higher expression or term.
  */
-fn find_valid_type_of_node(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<Type, Box<dyn Error>> {
+pub fn find_valid_type_of_node(node:&ASTNode, symbol_table:&SymbolTable, scope_history:&Vec<usize>) -> Result<Type, Box<dyn Error>> {
     match node {
         ASTNode::Expression {lhs, rhs, ..} => {
             let lhs_type = find_valid_type_of_node(lhs, symbol_table, scope_history).unwrap();
