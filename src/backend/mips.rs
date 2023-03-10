@@ -216,7 +216,10 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
                         mips_instrs.push(format!("\tsub $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
                         current_stack_offset -= 4;
+                        stack_types.pop();
+                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -243,19 +246,65 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::Mult => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tmul $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let mult_type = stack_types.pop().unwrap();
+                match mult_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # multiply int", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tmul $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                        stack_types.push(Type::Integer);
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t1, {}($sp) # multiply long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 12));
+
+                        mips_instrs.push(format!("\tmult $t0, $t2"));
+                        mips_instrs.push(format!("\tmflo $t4"));
+                        mips_instrs.push(format!("\tmfhi $s0"));
+                        mips_instrs.push(format!("\tmult $t0, $t3"));
+                        mips_instrs.push(format!("\tmflo $t7"));
+                        mips_instrs.push(format!("\tadd $s1, $s0, $t7"));
+                        mips_instrs.push(format!("\tmult $t1, $t2"));
+                        mips_instrs.push(format!("\tmfhi $t7"));
+                        mips_instrs.push(format!("\tadd $t5, $t7, $s1"));
+
+                        mips_instrs.push(format!("\tsw $t5, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tsw $t4, {}($sp)\n", current_stack_offset - 12));
+
+                        current_stack_offset -= 8;
+
+                        stack_types.pop();
+                        stack_types.pop();
+                        stack_types.push(Type::Long);
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::Div => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tdiv $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let mult_type = stack_types.pop().unwrap();
+                match mult_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tdiv $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                        stack_types.push(Type::Integer);
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::BitwiseAnd => {
