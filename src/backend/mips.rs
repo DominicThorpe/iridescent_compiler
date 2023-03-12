@@ -472,21 +472,81 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::NumNeg => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tsubu $t0, $zero, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation int", current_stack_offset));
+                        mips_instrs.push(format!("\tsubu $t0, $zero, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+
+                        mips_instrs.push(format!("\tnor $t0, $t0, $zero"));
+                        mips_instrs.push(format!("\tnor $t1, $t1, $zero"));
+                        mips_instrs.push(format!("\taddiu $t0, $t0, 1"));
+                        mips_instrs.push(format!("\tsltiu $t2, $t0, 1"));
+                        mips_instrs.push(format!("\taddu $t1, $t1, $t2"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset));
+                    },
+
+                    _ => todo!()
+                }
+
             },
 
             IntermediateInstr::Complement => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tnot $t0, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\tnot $t0, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+
+                        mips_instrs.push(format!("\tnot $t0, $t0"));
+                        mips_instrs.push(format!("\tnot $t1, $t1"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset));
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::LogicNeg => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # logical negation int", current_stack_offset));
+                        mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # logical negation long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+
+                        mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
+                        mips_instrs.push(format!("\tslt $t1, $zero, $t0"));
+                        mips_instrs.push(format!("\tand $t0, $t0, $t1"));
+                        mips_instrs.push(format!("\tmove $t0, $zero"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset));
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::LeftShiftLogical => {
