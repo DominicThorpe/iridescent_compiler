@@ -560,19 +560,69 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::RightShiftLogical => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tsrlv $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # logical right shift int", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tsrlv $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $a2, {}($sp) # logical shift right long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $a0, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 8));
+
+                        mips_instrs.push(format!("\tjal __srlint64"));
+                        mips_instrs.push(format!("\tmove $t0, $a0"));
+                        mips_instrs.push(format!("\tmove $t1, $a1"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
+
+                        current_stack_offset -= 8;
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::RightShiftArithmetic => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tsrav $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # arithmetic right shift int", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tsrav $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $a2, {}($sp) # arithmetic right shift long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $a0, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 8));
+
+                        mips_instrs.push(format!("\tjal __sraint64"));
+                        mips_instrs.push(format!("\tmove $t0, $a0"));
+                        mips_instrs.push(format!("\tmove $t1, $a1"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
+
+                        current_stack_offset -= 8;
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::Equal => {
