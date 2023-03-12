@@ -189,9 +189,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tadd $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
                         current_stack_offset -= 4;
-
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -207,10 +204,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -227,8 +220,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -244,10 +235,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -264,8 +251,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -288,10 +273,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t5, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -308,8 +289,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -327,10 +306,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -347,8 +322,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -364,10 +337,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -384,8 +353,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -401,10 +368,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -421,8 +384,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
-                        stack_types.push(Type::Integer);
                     },
 
                     Type::Long => {
@@ -438,10 +399,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
 
                         current_stack_offset -= 8;
-
-                        stack_types.pop();
-                        stack_types.pop();
-                        stack_types.push(Type::Long);
                     },
 
                     _ => todo!()
@@ -449,7 +406,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::NumNeg => {
-                let operand_type = stack_types.pop().unwrap();
+                let operand_type = stack_types.last().unwrap();
                 match operand_type {
                     Type::Integer => {
                         mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation int", current_stack_offset));
@@ -477,7 +434,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::Complement => {
-                let operand_type = stack_types.pop().unwrap();
+                let operand_type = stack_types.last().unwrap();
                 match operand_type {
                     Type::Integer => {
                         mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
@@ -501,7 +458,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::LogicNeg => {
-                let operand_type = stack_types.pop().unwrap();
+                let operand_type = stack_types.last().unwrap();
                 match operand_type {
                     Type::Integer => {
                         mips_instrs.push(format!("\tlw $t0, {}($sp) # logical negation int", current_stack_offset));
@@ -536,7 +493,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -552,7 +508,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -569,7 +524,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -585,7 +539,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -602,7 +555,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -618,7 +570,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -635,7 +586,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -653,7 +603,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -670,7 +619,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -688,7 +636,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -705,7 +652,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -723,7 +669,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -740,7 +685,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -759,7 +703,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -776,7 +719,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -794,7 +736,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -811,7 +752,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -830,7 +770,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -847,7 +786,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -863,7 +801,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -880,7 +817,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -896,7 +832,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -913,7 +848,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
 
                         current_stack_offset -= 4;
-                        stack_types.pop();
                     },
 
                     Type::Long => {
@@ -929,7 +863,6 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
 
                         current_stack_offset -= 8;
-                        stack_types.pop();
                     },
 
                     _ => todo!()
@@ -937,9 +870,29 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::JumpZero(label) => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tbeqz $t0, {}\n", label));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # jump zero int", current_stack_offset));
+                        mips_instrs.push(format!("\tbeqz $t0, {}\n", label));
+                        current_stack_offset -= 4;
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # jump zero long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+
+                        mips_instrs.push(format!("\tseq $t0, $t0, $zero"));
+                        mips_instrs.push(format!("\tseq $t1, $t1, $zero"));
+                        mips_instrs.push(format!("\tand $t0, $t0, $t1"));
+                        mips_instrs.push(format!("\tmove $t1, $zero"));
+                        mips_instrs.push(format!("\tbeqz $t0, {}\n", label));
+
+                        current_stack_offset -= 8;
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::Jump(label) => mips_instrs.push(format!("\tj {}\n", label)),

@@ -428,6 +428,8 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
             // generate condition code
             gen_intermediate_code(limit, instructions, memory_map, None, func_name, label_context);
+            let metadata = memory_map.get(&get_var_repr(func_name, control_identifier)).unwrap();
+            instructions.push(IntermediateInstr::Load(metadata.var_type.clone(), metadata.address));
             instructions.push(IntermediateInstr::LessThan);
             instructions.push(IntermediateInstr::JumpZero(return_label.clone()));
 
