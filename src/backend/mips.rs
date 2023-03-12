@@ -838,27 +838,102 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::LogicAnd => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tand $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tand $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+
+                        mips_instrs.push(format!("\tand $t0, $t0, $t2"));
+                        mips_instrs.push(format!("\tand $t1, $t1, $t3"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
+
+                        current_stack_offset -= 8;
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::LogicOr => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tor $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tor $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+
+                        mips_instrs.push(format!("\tor $t0, $t0, $t2"));
+                        mips_instrs.push(format!("\tor $t1, $t1, $t3"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
+
+                        current_stack_offset -= 8;
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::LogicXor => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\txor $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\txor $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+
+                        mips_instrs.push(format!("\txor $t0, $t0, $t2"));
+                        mips_instrs.push(format!("\txor $t1, $t1, $t3"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
+
+                        current_stack_offset -= 8;
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::JumpZero(label) => {
