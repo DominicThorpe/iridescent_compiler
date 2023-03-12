@@ -2,3 +2,5 @@
 *.iri
 *.asm
 Cargo.lock
+
+!src/backend/*.asm

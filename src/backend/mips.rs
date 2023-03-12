@@ -1,5 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::io::{self, BufRead};
 use std::error::Error;
 use std::collections::HashMap;
 
@@ -44,34 +45,10 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
 }
 
 
-fn get_divintlong() -> Vec<String> {
-    vec![
-        "\n__divint64:".to_owned(),
-        "\tli $t4, 0".to_owned(),
-        "\tli $t5, 0".to_owned(),
-        "\tseq $t1, $a0, $zero".to_owned(),
-        "\tseq $t2, $a1, $zero".to_owned(),
-        "\tand $t1, $t1, $t2".to_owned(),
-        "\tbnez $t1, __divint64_end".to_owned(),
-        "\tmove $t0, $a0".to_owned(),
-        "\tmove $t1, $a1".to_owned(),
-        "\tmove $t2, $a2".to_owned(),
-        "\tmove $t3, $a3".to_owned(),
-        "\n__divint64_loop:".to_owned(),
-        "\tsubu $t0, $t0, $t2".to_owned(),
-        "\tsubu $t1, $t1, $t3".to_owned(),
-        "\taddiu $t5, $t5, 1".to_owned(),
-        "\tsltiu $t7, $t5, 1".to_owned(),
-        "\taddu $t4, $t4, $t7".to_owned(),
-        "\tsleu $t6, $t2, $t0".to_owned(),
-        "\tsleu $t7, $t3, $t1".to_owned(),
-        "\tand $t6, $t6, $t7".to_owned(),
-        "\tbnez $t6, __divint64_loop".to_owned(),
-        "\n__divint64_end:".to_owned(),
-        "\tmove $a0, $t5".to_owned(),
-        "\tmove $a1, $t0".to_owned(),
-        "\tjr $ra\n\n".to_owned(),
-    ]
+fn add_library(library_name:&str) -> Vec<String> {
+    let file = OpenOptions::new().read(true).open(format!("src/backend/{}.asm", library_name)).unwrap();
+    let lines:Vec<String> = io::BufReader::new(file).lines().map(|l| l.unwrap()).collect();
+    lines
 }
 
 
@@ -87,7 +64,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
     let mut stack_types:Vec<Type> = vec![];
 
     mips_instrs.push("j main # start program execution\n\n".to_owned());
-    mips_instrs.append(&mut get_divintlong());
+    mips_instrs.append(&mut add_library("math64_mips"));
 
     for instr in intermediate_code {
         match instr {
@@ -550,11 +527,36 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             },
 
             IntermediateInstr::LeftShiftLogical => {
-                mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                mips_instrs.push(format!("\tsllv $t0, $t2, $t0"));
-                mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                current_stack_offset -= 4;
+                let operand_type = stack_types.pop().unwrap();
+                match operand_type {
+                    Type::Integer => {
+                        mips_instrs.push(format!("\tlw $t0, {}($sp) # shift left int", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tsllv $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
+
+                        current_stack_offset -= 4;
+                        stack_types.pop();
+                    },
+
+                    Type::Long => {
+                        mips_instrs.push(format!("\tlw $a2, {}($sp) # shift left long", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $a0, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 8));
+
+                        mips_instrs.push(format!("\tjal __sllint64"));
+                        mips_instrs.push(format!("\tmove $t0, $a0"));
+                        mips_instrs.push(format!("\tmove $t1, $a1"));
+
+                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
+                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
+
+                        current_stack_offset -= 8;
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::RightShiftLogical => {
