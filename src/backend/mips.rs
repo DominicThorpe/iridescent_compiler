@@ -21,7 +21,7 @@ struct VariableTableRow {
  * Calculates the size required for the function frame. Used when invoking a function.
  */
 fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
-    let mut frame_size = 0;
+    let mut frame_size = 8; // make space for the return address
     for symbol in &symbol_table.rows {
         match symbol {
             SymbolTableRow::Variable {primitive_type, function_id: fid, ..} => {
@@ -60,11 +60,10 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
     let mut mips_instrs:Vec<String> = vec![];
     let mut stack_id_offset_map: HashMap<usize, usize> = HashMap::new();
     let mut current_var_offset:usize = 0;
-    let mut current_stack_offset:i64 = 0;
     let mut stack_types:Vec<Type> = vec![];
 
     mips_instrs.push("j main # start program execution\n\n".to_owned());
-    mips_instrs.append(&mut add_library("math64_mips"));
+    // mips_instrs.append(&mut add_library("math64_mips"));
 
     for instr in intermediate_code {
         match instr {
@@ -73,28 +72,28 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
 
                 // add label for the function and size required for the stack local variables to the frame pointer
                 mips_instrs.push(format!("{}: # start func", name));
+                mips_instrs.push(format!("\tmove $fp, $sp"));
                 mips_instrs.push(format!("\taddiu $sp, $sp, -{}", frame_size));
-                mips_instrs.push(format!("\tsw $fp, 0($sp)"));
-                mips_instrs.push("\tmove $fp, $sp\n".to_string());
+                mips_instrs.push(format!("\tsw $ra, 0($sp)"));
             },
 
             // Push an integer to the stack, use registers $t0 and $t2 to allow for future implementation of long datatype
             IntermediateInstr::Push(_, var) => {
                 match var {
                     Argument::Integer(value) => {
-                        current_stack_offset += 4;
                         stack_types.push(Type::Integer);
                         mips_instrs.push(format!("\tli $t4, {:?} # push int", value));
-                        mips_instrs.push(format!("\tsw $t4, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t4, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Argument::Long(value) => {
-                        current_stack_offset += 8;
                         stack_types.push(Type::Long);
-                        mips_instrs.push(format!("\tli $t4, {:?} # push long", value & 0xFFFF_FFFF));
-                        mips_instrs.push(format!("\tli $t5, {:?}", (value as u64 & 0xFFFF_FFFF_0000_0000) >> 32));
-                        mips_instrs.push(format!("\tsw $t4, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tsw $t5, {}($sp)\n", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tli $t4, {:?} # push long", (value as u64 & 0xFFFF_FFFF_0000_0000) >> 32));
+                        mips_instrs.push(format!("\tli $t5, {:?}", value & 0xFFFF_FFFF));
+                        mips_instrs.push(format!("\tsw $t4, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t5, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -110,11 +109,11 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                             stack_id_offset_map.insert(id, current_var_offset);
                         }
 
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # store int", current_stack_offset));
-                        mips_instrs.push(format!("\tsw $t0, -{}($sp)\n", stack_id_offset_map.get(&id).unwrap()));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # store int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t0, -{}($fp)\n", stack_id_offset_map.get(&id).unwrap()));
 
                         stack_types.pop();
-                        current_stack_offset -= 4;
                     },
 
                     Type::Long => {
@@ -124,13 +123,13 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                             stack_id_offset_map.insert(id, current_var_offset);
                         }
 
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # store long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tsw $t0, -{}($sp)", stack_id_offset_map.get(&id).unwrap()));
-                        mips_instrs.push(format!("\tsw $t1, -{}($sp)\n", stack_id_offset_map.get(&id).unwrap() - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # store long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsw $t0, -{}($fp)", stack_id_offset_map.get(&id).unwrap()));
+                        mips_instrs.push(format!("\tsw $t1, -{}($fp)\n", stack_id_offset_map.get(&id).unwrap() - 4));
 
                         stack_types.pop();
-                        current_stack_offset -= 8;
                     }
 
                     _ => todo!("Only int is currently supported for store instructions!")
@@ -140,23 +139,23 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::Load(var_type, id) => {
                 match var_type {
                     Type::Integer => {
-                        current_stack_offset += 4;
                         stack_types.push(Type::Integer);
 
                         let offset = stack_id_offset_map.get(&id).unwrap();
-                        mips_instrs.push(format!("\tlw $t0, -{}($sp) # load int", offset));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tlw $t0, -{}($fp) # load int", offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        current_stack_offset += 8;
                         stack_types.push(Type::Long);
 
                         let offset = stack_id_offset_map.get(&id).unwrap();
-                        mips_instrs.push(format!("\tlw $t0, -{}($sp) # load long", offset));
-                        mips_instrs.push(format!("\tlw $t1, -{}($sp)", offset - 4));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 4));
+                        mips_instrs.push(format!("\tlw $t0, -{}($fp) # load long", offset));
+                        mips_instrs.push(format!("\tlw $t1, -{}($fp)", offset - 4));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!("Only int is currently supported for store instructions!")
@@ -166,12 +165,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
             IntermediateInstr::Return(return_type) => {
                 match return_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $a0, {}($sp) # return int\n", current_stack_offset));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # return int"));
+                        mips_instrs.push(format!("\tlw $a0, 0($sp)\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $a0, {}($sp) # return long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $a1, {}($sp)\n", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # return long"));
+                        mips_instrs.push(format!("\tlw $a0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $a1, -4($sp)\n"));
                     }
     
                     _ => todo!()
@@ -184,26 +185,32 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let add_type = stack_types.pop().unwrap();
                 match add_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # add int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # add int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+
                         mips_instrs.push(format!("\tadd $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                        current_stack_offset -= 4;
+
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # add long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # add long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tadd $t0, $t0, $t2"));
                         mips_instrs.push(format!("\tadd $t1, $t1, $t3"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -214,50 +221,57 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let sub_type = stack_types.pop().unwrap();
                 match sub_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # sub integer", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # sub int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsub $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # sub long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # sub long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tsubu $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tsubu $t1, $t3, $t1"));
-
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
-
+                    
                     _ => todo!()
                 }
             },
-
+            
             IntermediateInstr::Mult => {
                 let mult_type = stack_types.pop().unwrap();
                 match mult_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # multiply int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # multiply int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tmul $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # multiply long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # multiply long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tmult $t0, $t2"));
                         mips_instrs.push(format!("\tmflo $t4"));
@@ -269,10 +283,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tmfhi $t7"));
                         mips_instrs.push(format!("\tadd $t5, $t7, $s1"));
 
-                        mips_instrs.push(format!("\tsw $t4, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t5, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t4, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t5, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -283,29 +296,32 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let mult_type = stack_types.pop().unwrap();
                 match mult_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # divide int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # divide int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tdiv $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $a0, {}($sp) # divide long", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $a2, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $a3, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # divide long"));
+                        mips_instrs.push(format!("\tlw $a2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $a3, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $a0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $a1, -4($sp)"));
                         
                         mips_instrs.push(format!("\tjal __divint64"));
 
                         mips_instrs.push(format!("\tmove $t0, $a0"));
                         mips_instrs.push(format!("\tmove $t1, $a1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -316,27 +332,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # bitwise and int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # bitwise and int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tand $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # bitwise and long", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # bitwise and long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tand $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tand $t1, $t3, $t1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -347,27 +366,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # bitwise or int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # bitwise or int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tor $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # bitwise or long", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # bitwise or long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tor $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tor $t1, $t3, $t1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -378,27 +400,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # bitwise or int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # bitwise xor int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\txor $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # bitwise or long", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # bitwise xor long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\txor $t0, $t2, $t0"));
                         mips_instrs.push(format!("\txor $t1, $t3, $t1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -409,14 +434,17 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.last().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation int", current_stack_offset));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # numerical negation int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
                         mips_instrs.push(format!("\tsubu $t0, $zero, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # numerical negation long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
 
                         mips_instrs.push(format!("\tnor $t0, $t0, $zero"));
                         mips_instrs.push(format!("\tnor $t1, $t1, $zero"));
@@ -424,8 +452,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tsltiu $t2, $t0, 1"));
                         mips_instrs.push(format!("\taddu $t1, $t1, $t2"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -437,20 +466,24 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.last().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # complement int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
                         mips_instrs.push(format!("\tnot $t0, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # numerical negation long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # complement long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
 
                         mips_instrs.push(format!("\tnot $t0, $t0"));
                         mips_instrs.push(format!("\tnot $t1, $t1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -461,22 +494,26 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.last().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # logical negation int", current_stack_offset));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # logical negation int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
                         mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # logical negation long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # logical negation long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
 
                         mips_instrs.push(format!("\tslt $t0, $zero, $t0"));
                         mips_instrs.push(format!("\tslt $t1, $zero, $t0"));
                         mips_instrs.push(format!("\tand $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t0, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -487,27 +524,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # shift left int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # shift left int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsllv $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $a2, {}($sp) # shift left long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $a0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # shift left long"));
+                        mips_instrs.push(format!("\tlw $a2, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $a0, -4($sp)"));
+                        mips_instrs.push(format!("\tlw $a1, 0($sp)"));
 
                         mips_instrs.push(format!("\tjal __sllint64"));
                         mips_instrs.push(format!("\tmove $t0, $a0"));
                         mips_instrs.push(format!("\tmove $t1, $a1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -518,27 +558,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # logical right shift int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # logical right shift int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsrlv $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $a2, {}($sp) # logical shift right long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $a0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # shift right long"));
+                        mips_instrs.push(format!("\tlw $a2, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $a0, -4($sp)"));
+                        mips_instrs.push(format!("\tlw $a1, 0($sp)"));
 
                         mips_instrs.push(format!("\tjal __srlint64"));
                         mips_instrs.push(format!("\tmove $t0, $a0"));
                         mips_instrs.push(format!("\tmove $t1, $a1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -549,60 +592,65 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # arithmetic right shift int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tsrav $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # arithmetic right shift int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tsrlv $t0, $t2, $t0"));
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $a2, {}($sp) # arithmetic right shift long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $a0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tlw $a1, {}($sp)", current_stack_offset - 8));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # shift right long"));
+                        mips_instrs.push(format!("\tlw $a2, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $a0, -4($sp)"));
+                        mips_instrs.push(format!("\tlw $a1, 0($sp)"));
 
                         mips_instrs.push(format!("\tjal __sraint64"));
                         mips_instrs.push(format!("\tmove $t0, $a0"));
                         mips_instrs.push(format!("\tmove $t1, $a1"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
                 }
             },
-
+         
             IntermediateInstr::Equal => {
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test equal int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # test equal int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tseq $t0, $t0, $t2"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test not equal long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # test equal long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tseq $t0, $t0, $t2"));
                         mips_instrs.push(format!("\tseq $t1, $t1, $t3"));
                         mips_instrs.push(format!("\tand $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -613,29 +661,31 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test not equal int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # test equal int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsne $t0, $t0, $t2"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test not equal long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # test equal long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tsne $t0, $t0, $t2"));
                         mips_instrs.push(format!("\tsne $t1, $t1, $t3"));
                         mips_instrs.push(format!("\tor $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -646,29 +696,32 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test greater than int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # test greater than int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsgt $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test greater than long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # test greater than long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tsgt $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tsgt $t1, $t3, $t1"));
                         mips_instrs.push(format!("\tor $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -679,19 +732,23 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test greater or equal int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # test greater or equal int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsge $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test greater or equal long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # test greater or equal long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tslt $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tsge $t1, $t3, $t1"));
@@ -699,10 +756,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tand $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -713,29 +769,32 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than int", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # test less than int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tslt $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # test greater or equal long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tslt $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tslt $t1, $t3, $t1"));
                         mips_instrs.push(format!("\tor $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -746,19 +805,23 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # test less or equal int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tsle $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # test less or equal long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tsgt $t0, $t2, $t0"));
                         mips_instrs.push(format!("\tsle $t1, $t3, $t1"));
@@ -766,10 +829,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                         mips_instrs.push(format!("\tand $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 12));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -780,27 +842,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # logical and int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tand $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # logical and long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tand $t0, $t0, $t2"));
                         mips_instrs.push(format!("\tand $t1, $t1, $t3"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -811,27 +876,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # logical or int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\tor $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # logical or long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\tor $t0, $t0, $t2"));
                         mips_instrs.push(format!("\tor $t1, $t1, $t3"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -842,27 +910,30 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp)", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # logical xor int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
                         mips_instrs.push(format!("\txor $t0, $t2, $t0"));
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)\n", current_stack_offset - 4));
-
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 4\n"));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # test less than long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
-                        mips_instrs.push(format!("\tlw $t2, {}($sp)", current_stack_offset - 8));
-                        mips_instrs.push(format!("\tlw $t3, {}($sp)", current_stack_offset - 12));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # logical xor long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
+
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8"));
+                        mips_instrs.push(format!("\tlw $t2, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t3, -4($sp)"));
 
                         mips_instrs.push(format!("\txor $t0, $t0, $t2"));
                         mips_instrs.push(format!("\txor $t1, $t1, $t3"));
 
-                        mips_instrs.push(format!("\tsw $t0, {}($sp)", current_stack_offset - 12));
-                        mips_instrs.push(format!("\tsw $t1, {}($sp)\n", current_stack_offset - 8));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tsw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tsw $t1, -4($sp)"));
+                        mips_instrs.push(format!("\tsubi $sp, $sp, 8\n"));
                     },
 
                     _ => todo!()
@@ -873,22 +944,21 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                 let operand_type = stack_types.pop().unwrap();
                 match operand_type {
                     Type::Integer => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # jump zero int", current_stack_offset));
-                        mips_instrs.push(format!("\tbeqz $t0, {}\n", label));
-                        current_stack_offset -= 4;
+                        mips_instrs.push(format!("\taddi $sp, $sp, 4 # jump zero int"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tbnez $t0, {}\n", label));
                     },
 
                     Type::Long => {
-                        mips_instrs.push(format!("\tlw $t0, {}($sp) # jump zero long", current_stack_offset));
-                        mips_instrs.push(format!("\tlw $t1, {}($sp)", current_stack_offset - 4));
+                        mips_instrs.push(format!("\taddi $sp, $sp, 8 # jump zero long"));
+                        mips_instrs.push(format!("\tlw $t0, 0($sp)"));
+                        mips_instrs.push(format!("\tlw $t1, -4($sp)"));
 
                         mips_instrs.push(format!("\tseq $t0, $t0, $zero"));
                         mips_instrs.push(format!("\tseq $t1, $t1, $zero"));
                         mips_instrs.push(format!("\tand $t0, $t0, $t1"));
                         mips_instrs.push(format!("\tmove $t1, $zero"));
-                        mips_instrs.push(format!("\tbeqz $t0, {}\n", label));
-
-                        current_stack_offset -= 8;
+                        mips_instrs.push(format!("\tbnez $t0, {}\n", label));
                     },
 
                     _ => todo!()

@@ -35,8 +35,8 @@ __divint64_loop:
 
 __divint64_end:
     # move results into $a0 and $a1
-	move $a0, $t5
-	move $a1, $t0
+	move $a0, $t0
+	move $a1, $t5
 	jr $ra # return
 
 
