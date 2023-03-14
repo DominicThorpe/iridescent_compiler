@@ -1,0 +1,691 @@
+{
+    "mips": {
+        "start_func": [
+            "{}: # start func",
+            "\tmove $fp, $sp",
+            "\taddiu $sp, $sp, -{}",
+            "\tsw $ra, 0($sp)"
+        ],
+
+        "push": {
+            "int": [
+                "\tli $t4, {} # push int",
+                "\tsw $t4, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\tli $t4, {} # push long",
+                "\tli $t5, {}",
+                "\tsw $t4, 0($sp)",
+                "\tsw $t5, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "store" : {
+            "int": [
+                "\taddi $sp, $sp, 4 # store int",
+                "\tlw $t0, 0($sp)",
+                "\tsw $t0, -{}($fp)"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # store long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\tsw $t0, -{}($fp)",
+                "\tsw $t1, -{}($fp)"
+            ]
+        },
+
+        "load": {
+            "int": [
+                "\tlw $t0, -{}($fp) # load int",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\tlw $t0, -{}($fp) # load long",
+                "\tlw $t1, -{}($fp)",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "return": {
+            "int": [
+                "\taddi $sp, $sp, 4 # return int",
+                "\tlw $a0, 0($sp)"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # return long",
+                "\tlw $a0, 0($sp)",
+                "\tlw $a1, -4($sp)"
+            ]
+        },
+
+        "add": {
+            "int": [
+                "\taddi $sp, $sp, 4 # add int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tadd $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # add long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tadd $t0, $t0, $t2",
+                "\tadd $t1, $t1, $t3",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "sub": {
+            "int": [
+                "\taddi $sp, $sp, 4 # sub int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsub $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # sub long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tsubu $t0, $t2, $t0",
+                "\tsubu $t1, $t3, $t1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "mult": {
+            "int": [
+                "\taddi $sp, $sp, 4 # multiply int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tmul $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # multiply long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tmult $t0, $t2",
+                "\tmflo $t4",
+                "\tmfhi $s0",
+                "\tmult $t0, $t3",
+                "\tmflo $t7",
+                "\tadd $s1, $s0, $t7",
+                "\tmult $t1, $t2",
+                "\tmfhi $t7",
+                "\tadd $t5, $t7, $s1",
+                "\tsw $t4, 0($sp)",
+                "\tsw $t5, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "div": {
+            "int": [
+                "\taddi $sp, $sp, 4 # divide int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tdiv $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # divide long",
+                "\tlw $a2, 0($sp)",
+                "\tlw $a3, -4($sp)",
+
+                "\taddi $sp, $sp, 8",
+                "\tlw $a0, 0($sp)",
+                "\tlw $a1, -4($sp)",
+                
+                "\tjal __divint64",
+
+                "\tmove $t0, $a0",
+                "\tmove $t1, $a1",
+
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "bitwise_and": {
+            "int": [
+                "\taddi $sp, $sp, 4 # bitwise and int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tand $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # bitwise and long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tand $t0, $t2, $t0",
+                "\tand $t1, $t3, $t1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "bitwise_or": {
+            "int": [
+                "\taddi $sp, $sp, 4 # bitwise or int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tor $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # bitwise or long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tor $t0, $t2, $t0",
+                "\tor $t1, $t3, $t1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "bitwise_xor": {
+            "int": [
+                "\taddi $sp, $sp, 4 # bitwise xor int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\txor $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # bitwise xor long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\txor $t0, $t2, $t0",
+                "\txor $t1, $t3, $t1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "numerical_neg": {
+            "int": [
+                "\taddi $sp, $sp, 4 # numerical negation int",
+                "\tlw $t0, 0($sp)",
+                "\tsubu $t0, $zero, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # numerical negation long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\tnor $t0, $t0, $zero",
+                "\tnor $t1, $t1, $zero",
+                "\taddiu $t0, $t0, 1",
+                "\tsltiu $t2, $t0, 1",
+                "\taddu $t1, $t1, $t2",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "logical_neg": {
+            "int": [
+                "\taddi $sp, $sp, 4 # logical negation int",
+                "\tlw $t0, 0($sp)",
+                "\tslt $t0, $zero, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # logical negation long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\tslt $t0, $zero, $t0",
+                "\tslt $t1, $zero, $t0",
+                "\tand $t0, $t0, $t1",
+                "\tmove $t0, $zero",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "complement": {
+            "int": [
+                "\taddi $sp, $sp, 4 # complement int",
+                "\tlw $t0, 0($sp)",
+                "\tnot $t0, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+            
+            "long": [
+                "\taddi $sp, $sp, 8 # complement long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\tnot $t0, $t0",
+                "\tnot $t1, $t1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "sll": {
+            "int": [
+                "\taddi $sp, $sp, 4 # shift left int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsllv $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # shift left long",
+                "\tlw $a2, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $a0, -4($sp)",
+                "\tlw $a1, 0($sp)",
+                "\tjal __sllint64",
+                "\tmove $t0, $a0",
+                "\tmove $t1, $a1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "srl": {
+            "int": [
+                "\taddi $sp, $sp, 4 # logical right shift int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsrlv $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # shift right long",
+                "\tlw $a2, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $a0, -4($sp)",
+                "\tlw $a1, 0($sp)",
+                "\tjal __srlint64",
+                "\tmove $t0, $a0",
+                "\tmove $t1, $a1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "sra": {
+            "int": [
+                "\taddi $sp, $sp, 4 # arithmetic right shift int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsrlv $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # shift right long",
+                "\tlw $a2, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $a0, -4($sp)",
+                "\tlw $a1, 0($sp)",
+                "\tjal __sraint64",
+                "\tmove $t0, $a0",
+                "\tmove $t1, $a1",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "test_equal": {
+            "int": [
+                "\taddi $sp, $sp, 4 # test equal int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tseq $t0, $t0, $t2",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # test equal long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+
+                "\tseq $t0, $t0, $t2",
+                "\tseq $t1, $t1, $t3",
+                "\tand $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "test_unequal": {
+            "int": [
+                "\taddi $sp, $sp, 4 # test not equal int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsne $t0, $t0, $t2",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # test not equal long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tsne $t0, $t0, $t2",
+                "\tsne $t1, $t1, $t3",
+                "\tor $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "test_greater_than": {
+            "int": [
+                "\taddi $sp, $sp, 4 # test greater than int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsgt $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # test greater than long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tsgt $t0, $t2, $t0",
+                "\tsgt $t1, $t3, $t1",
+                "\tor $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "test_greater_equal": {
+            "int": [
+                "\taddi $sp, $sp, 4 # test greater or equal int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsge $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # test greater or equal long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tslt $t0, $t2, $t0",
+                "\tsge $t1, $t3, $t1",
+                "\tnot $t0, $t0",
+                "\tand $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "test_less_than": {
+            "int": [
+                "\taddi $sp, $sp, 4 # test less than int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tslt $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # test greater or equal long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tslt $t0, $t2, $t0",
+                "\tslt $t1, $t3, $t1",
+                "\tor $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "test_less_equal": {
+            "int": [
+                "\taddi $sp, $sp, 4 # test less or equal int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tsle $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # test less or equal long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+
+                "\tsgt $t0, $t2, $t0",
+                "\tsle $t1, $t3, $t1",
+                "\tnot $t0, $t0",
+                "\tand $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "logical_and": {
+            "int": [
+                "\taddi $sp, $sp, 4 # logical and int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tand $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # logical and long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tand $t0, $t0, $t2",
+                "\tand $t1, $t1, $t3",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "logical_or": {
+            "int": [
+                "\taddi $sp, $sp, 4 # logical or int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\tor $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # logical or long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\tor $t0, $t0, $t2",
+                "\tor $t1, $t1, $t3",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "logical_xor": {
+            "int": [
+                "\taddi $sp, $sp, 4 # logical xor int",
+                "\tlw $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $t2, 0($sp)",
+                "\txor $t0, $t2, $t0",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # logical xor long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlw $t2, 0($sp)",
+                "\tlw $t3, -4($sp)",
+                "\txor $t0, $t0, $t2",
+                "\txor $t1, $t1, $t3",
+                "\tsw $t0, 0($sp)",
+                "\tsw $t1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
+            ]
+        },
+
+        "jump_zero": {
+            "int": [
+                "\taddi $sp, $sp, 4 # jump zero int",
+                "\tlw $t0, 0($sp)",
+                "\tbnez $t0, {}"
+            ],
+
+            "long": [
+                "\taddi $sp, $sp, 8 # jump zero long",
+                "\tlw $t0, 0($sp)",
+                "\tlw $t1, -4($sp)",
+                "\tseq $t0, $t0, $zero",
+                "\tseq $t1, $t1, $zero",
+                "\tand $t0, $t0, $t1",
+                "\tmove $t1, $zero",
+                "\tbnez $t0, {}"
+            ]
+        },
+
+        "jump": [
+            "\tj {}"
+        ],
+
+        "label": [
+            "\n\n{}:"
+        ]
+    }
+}
