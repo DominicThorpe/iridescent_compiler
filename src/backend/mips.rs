@@ -63,7 +63,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
     let mut stack_types:Vec<Type> = vec![];
 
     mips_instrs.push("j main # start program execution\n\n".to_owned());
-    // mips_instrs.append(&mut add_library("math64_mips"));
+    mips_instrs.append(&mut add_library("math64_mips"));
 
     for instr in intermediate_code {
         match instr {

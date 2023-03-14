@@ -15,23 +15,31 @@ __divint64:
 	bnez $t1, __divint64_end
 
     # move args into temp registers
-	move $t0, $a0
-	move $t1, $a1
-	move $t2, $a2
-	move $t3, $a3
+	move $t1, $a0
+	move $t0, $a1
+	move $t3, $a2
+	move $t2, $a3
 
 __divint64_loop:
-    # iteratively subtract divisor from target until it target < divisor
-    # then return
-	subu $t0, $t0, $t2
+	# iteratively subtract divisor from target until it target < divisor then return
+	# 64 bit subtraction
+	subu $s0, $t0, $t2
+	sltu $t0, $t0, $s0
 	subu $t1, $t1, $t3
+	subu $s1, $t1, $t0
+	
+	# move result of subtraction into $t0 and $t1
+	move $t0, $s0
+	move $t1, $s1
+	
+	# black magic
 	addiu $t5, $t5, 1
 	sltiu $t7, $t5, 1
 	addu $t4, $t4, $t7
-	sleu $t6, $t2, $t0
-	sleu $t7, $t3, $t1
+	sltu $t6, $t0, $t2
+	sltu $t7, $t1, $t3
 	and $t6, $t6, $t7
-	bnez $t6, __divint64_loop
+	beqz $t6, __divint64_loop
 
 __divint64_end:
     # move results into $a0 and $a1
