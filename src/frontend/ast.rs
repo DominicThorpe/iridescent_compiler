@@ -1,3 +1,6 @@
+use std::string::ToString;
+
+
 /**
  * Represents all the currently implemented primitive datatypes.
  */
@@ -12,6 +15,22 @@ pub enum Type {
     Float,
     Double,
     String
+}
+
+impl ToString for Type {
+    fn to_string(&self) -> String {
+        match self {
+            Type::Void => String::from("void"),
+            Type::Byte => String::from("byte"),
+            Type::Integer => String::from("int"),
+            Type::Long => String::from("long"),
+            Type::Char => String::from("char"),
+            Type::Boolean => String::from("bool"),
+            Type::Float => String::from("float"),
+            Type::Double => String::from("double"),
+            Type::String => String::from("str")
+        }
+    }
 }
 
 

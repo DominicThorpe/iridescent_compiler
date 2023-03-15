@@ -117,6 +117,27 @@ impl SymbolTable {
 
         Err(Box::new(SymbolNotFoundError(identifier.to_owned())))
     }
+
+
+    /**
+     * Finds the return type of the given function name, returns a `SymbolNotFoundError` if the function
+     * identifier is not found.
+     */
+    pub fn get_func_return_type(&self, identifier:&str) -> Result<Type, SymbolNotFoundError> {
+        for row in &self.rows {
+            if &row.get_identifier() == identifier {
+                match row {                    
+                    SymbolTableRow::Function {return_type, ..} => {
+                        return Ok(return_type.clone())
+                    },
+
+                    _ => {}
+                }
+            }
+        }
+
+        Err(SymbolNotFoundError(identifier.to_owned()))
+    }
 }
 
 
