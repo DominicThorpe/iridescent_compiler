@@ -5,7 +5,6 @@ use std::error::Error;
 use std::collections::HashMap;
 
 use crate::frontend::intermediate_gen::{IntermediateInstr, Argument};
-use crate::frontend::semantics::{SymbolTable, SymbolTableRow};
 use crate::frontend::ast::Type;
 
 
@@ -52,34 +51,6 @@ fn get_target_code(architecture:&str, instr:&str, op_type:Option<&str>, argument
 }
 
 
-/**
- * Calculates the size required for the function frame. Used when invoking a function.
- */
-fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
-    let mut frame_size = 8; // make space for the return address
-    for symbol in &symbol_table.rows {
-        match symbol {
-            SymbolTableRow::Variable {primitive_type, function_id: fid, ..} => {
-                if fid != function_id {
-                    continue;
-                }
-
-                // add the size in bytes of the datatype to the frame size
-                match primitive_type {
-                    Type::Integer => frame_size += 4,
-                    Type::Long => frame_size += 8,
-                    _ => todo!()
-                }
-            },
-
-            _ => {}
-        }
-    }
-
-    frame_size
-}
-
-
 fn add_library(library_name:&str) -> Vec<String> {
     let file = OpenOptions::new().read(true).open(format!("src/backend/{}.asm", library_name)).unwrap();
     let lines:Vec<String> = io::BufReader::new(file).lines().map(|l| l.unwrap()).collect();
@@ -90,7 +61,7 @@ fn add_library(library_name:&str) -> Vec<String> {
 /**
  * Generates the final MIPS assembly code that can then be compiled to native binary using a separate tool.
  */
-pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:SymbolTable, filename:&str) -> Result<(), Box<dyn Error>> {
+pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str) -> Result<(), Box<dyn Error>> {
     let mut file = OpenOptions::new().write(true).truncate(true).create(true).open(filename)?;
     let mut mips_instrs:Vec<String> = vec![];
     let mut stack_id_offset_map: HashMap<usize, usize> = HashMap::new();
@@ -103,8 +74,15 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
     for instr in intermediate_code {
         match instr {
             IntermediateInstr::FuncStart(name) => {
-                let frame_size = get_frame_size(&name, &symbol_table);
-                mips_instrs.push(get_target_code("mips", "start_func", None, vec![name, frame_size.to_string()]));
+                mips_instrs.push(get_target_code("mips", "start_func", None, vec![name]));
+            },
+
+            IntermediateInstr::FuncEnd(name) => {
+                if name == "main" {
+                    mips_instrs.push(get_target_code("mips", "end_main", None, vec![]));
+                } else {
+                    mips_instrs.push(get_target_code("mips", "end_func", None, vec![name]));
+                }
             },
 
             // Push an integer to the stack, use registers $t0 and $t2 to allow for future implementation of long datatype
@@ -117,7 +95,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
 
                     Argument::Long(value) => {
                         stack_types.push(Type::Long);
-                        let upper_bits:u64 = value as u64 & 0xFFFF_FFFF_0000_0000 >> 32;
+                        let upper_bits:u64 = (value as u64 & 0xFFFF_FFFF_0000_0000) >> 32;
                         let lower_bits:u64 = value as u64 & 0xFFFF_FFFF;
                         mips_instrs.push(get_target_code("mips", "push", Some("long"), vec![
                             upper_bits.to_string(),
@@ -397,6 +375,13 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, symbol_table:Symb
                     Type::Integer => mips_instrs.push(get_target_code("mips", "jump_zero", Some("int"), vec![label])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "jump_zero", Some("long"), vec![label])),
                     _ => todo!()
+                }
+            },
+
+            IntermediateInstr::Call(func_name, return_type) => {
+                mips_instrs.push(get_target_code("mips", "call", Some(&return_type.to_string()), vec![func_name.clone(), func_name]));
+                if return_type != Type::Void {
+                    stack_types.push(return_type);
                 }
             },
 

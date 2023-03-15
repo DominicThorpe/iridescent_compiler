@@ -1,10 +1,20 @@
 {
     "mips": {
         "start_func": [
-            "{}: # start func",
+            "{}: # start subroutine",
             "\tmove $fp, $sp",
-            "\taddiu $sp, $sp, -{}",
-            "\tsw $ra, 0($sp)"
+            "\tsw $fp, 0($sp)",
+            "\tsubi $sp, $sp, 4"
+        ],
+
+        "end_func": [
+            "\tmove $sp, $fp  # end subroutine {}",
+            "\tjr $ra",
+            "\tnop"
+        ],
+
+        "end_main": [
+            "\tj end # end of main"
         ],
 
         "push": {
@@ -58,7 +68,7 @@
         "return": {
             "int": [
                 "\taddi $sp, $sp, 4 # return int",
-                "\tlw $a0, 0($sp)"
+                "\tlw $a1, 0($sp)"
             ],
 
             "long": [
@@ -677,6 +687,42 @@
                 "\tand $t0, $t0, $t1",
                 "\tmove $t1, $zero",
                 "\tbnez $t0, {}"
+            ]
+        },
+
+        "call": {
+            "void": [
+                "\tsw $ra, 0($sp) # call function {}",
+                "\tsubiu $sp, $sp, 4",
+                "\tjal {}",
+
+                "\tlw $ra, 4($sp)",
+                "\taddi $sp, $sp, 4"
+            ],
+
+            "int": [
+                "\tsw $ra, 0($sp) # call function {}",
+                "\tsubiu $sp, $sp, 4",
+                "\tjal {}",
+
+                "\tlw $ra, 4($sp)",
+                "\taddi $sp, $sp, 4",
+
+                "\tsw $a1, 0($sp)",
+                "\tsubiu $sp, $sp, 4"
+            ],
+
+            "long": [
+                "\tsw $ra, 0($sp) # call function {}",
+                "\tsubiu $sp, $sp, 4",
+                "\tjal {}",
+
+                "\tlw $ra, 4($sp)",
+                "\taddi $sp, $sp, 4",
+
+                "\tsw $a0, 0($sp)",
+                "\tsw $a1, -4($sp)",
+                "\tsubiu $sp, $sp, 8"
             ]
         },
 
