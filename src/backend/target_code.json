@@ -122,8 +122,12 @@
                 "\taddi $sp, $sp, 8",
                 "\tlw $t2, 0($sp)",
                 "\tlw $t3, -4($sp)",
-                "\tsubu $t0, $t2, $t0",
-                "\tsubu $t1, $t3, $t1",
+
+                "\tsubu $s1, $t1, $t3",
+                "\tsltu $t1, $t1, $s1",
+                "\tsubu $t0, $t0, $t2",
+                "\tsubu $s0, $t0, $t1",
+
                 "\tsw $t0, 0($sp)",
                 "\tsw $t1, -4($sp)",
                 "\tsubi $sp, $sp, 8"
