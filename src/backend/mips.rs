@@ -31,6 +31,7 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
 
                 // add the size in bytes of the datatype to the frame size
                 match primitive_type {
+                    Type::Byte => frame_size += 1,
                     Type::Integer => frame_size += 4,
                     Type::Long => frame_size += 8,
                     _ => todo!()
@@ -68,7 +69,7 @@ fn get_target_code(architecture:&str, instr:&str, op_type:Option<&str>, argument
 
     let required_arg_count = target_code.matches("{}").count();
     if required_arg_count != arguments.len() {
-        panic!("Instruction {} takes {} arguments, but only {} were provided", instr, required_arg_count, arguments.len());
+        panic!("Instruction {} takes {} arguments, but {} were provided", instr, required_arg_count, arguments.len());
     }
 
     for arg in arguments {
@@ -134,6 +135,11 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         ]));
                     },
 
+                    Argument::Byte(value) => {
+                        stack_types.push(Type::Byte);
+                        mips_instrs.push(get_target_code("mips", "push", Some("byte"), vec![value.to_string()]));
+                    },
+
                     _ => todo!()
                 }
             },
@@ -164,9 +170,23 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         ]));
 
                         stack_types.pop();
-                    }
+                    },
 
-                    _ => todo!("Only int is currently supported for store instructions!")
+                    Type::Byte => {
+                        // if the key does not exist, add a new key to represent a new local variable
+                        if !stack_id_offset_map.contains_key(&id) {
+                            current_var_offset += 1;
+                            stack_id_offset_map.insert(id, current_var_offset);
+                        }
+
+                        mips_instrs.push(get_target_code("mips", "store", Some("byte"), vec![
+                            stack_id_offset_map.get(&id).unwrap().to_string()
+                        ]));
+
+                        stack_types.pop();
+                    },
+
+                    _ => todo!()
                 }
             },
 
@@ -188,7 +208,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         ]));
                     },
 
-                    _ => todo!("Only int is currently supported for store instructions!")
+                    Type::Byte => {
+                        stack_types.push(Type::Byte);
+
+                        let offset = stack_id_offset_map.get(&id).unwrap_or(&0);
+                        mips_instrs.push(get_target_code("mips", "load", Some("byte"), vec![offset.to_string()]));
+                    },
+
+                    _ => todo!()
                 }
             },
 
@@ -196,6 +223,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match return_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "return", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "return", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "return", Some("byte"), vec![])),
                     _ => todo!()
                 }
 
@@ -207,6 +235,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match add_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "add", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "add", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "add", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -216,6 +245,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match sub_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "sub", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "sub", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "sub", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -225,6 +255,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match mult_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "mult", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "mult", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "mult", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -234,6 +265,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "div", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "div", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "div", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -243,6 +275,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "bitwise_and", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "bitwise_and", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "bitwise_and", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -252,6 +285,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "bitwise_or", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "bitwise_or", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "bitwise_or", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -261,6 +295,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "bitwise_xor", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "bitwise_xor", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "bitwise_xor", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -270,6 +305,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "numerical_neg", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "numerical_neg", Some("long"), vec![])),
+                    Type::Byte => panic!("Numerical negation cannot be applied to type byte"),
                     _ => todo!()
                 }
             },
@@ -279,6 +315,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "complement", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "complement", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "complement", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -288,6 +325,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "logical_neg", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "logical_neg", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "logical_neg", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -297,6 +335,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "sll", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "sll", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "sll", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -306,6 +345,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "srl", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "srl", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "srl", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
@@ -315,6 +355,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "sra", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "sra", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "sra", Some("byte"), vec![])),
                     _ => todo!()
                 }
             },
