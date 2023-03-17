@@ -19,5 +19,5 @@ fn main() {
         println!("{}", instr);
     }
 
-    backend::mips::generate_mips(instructions, "mips.asm").unwrap();
+    backend::mips::generate_mips(instructions, "mips.asm", &symbol_table).unwrap();
 }

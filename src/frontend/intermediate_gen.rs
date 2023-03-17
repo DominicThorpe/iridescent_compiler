@@ -51,9 +51,10 @@ pub enum IntermediateInstr {
     NotEqual,
     In, // not implemented
     Out, // not implemented
+    LoadParam(Type, usize), // not implemented
     Jump(String),
     JumpZero(String),
-    Call(String, Type), // not implemented
+    Call(String, Type),
     Push(Type, Argument),
     Load(Type, usize),
     Store(Type, usize),
@@ -202,18 +203,31 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             primitive_type:Option<Type>, func_name:&str, label_context:&mut LabelContext, symbol_table:&SymbolTable) {
     static NEXT_ADDRESS:AtomicUsize = AtomicUsize::new(0);
     match root {
-        ASTNode::Function {identifier, statements, return_type, parameters, ..} => {
-            instructions.push(IntermediateInstr::FuncStart(identifier.to_owned()));
+        ASTNode::Function {identifier: func_id, statements, return_type, parameters, ..} => {
+            instructions.push(IntermediateInstr::FuncStart(func_id.to_owned()));
 
+            let mut param_index = 0;
             for param in parameters {
-                gen_intermediate_code(param, instructions, memory_map, None, identifier, label_context, symbol_table)
+                gen_intermediate_code(param, instructions, memory_map, None, func_id, label_context, symbol_table);
+                match param {
+                    ASTNode::Parameter {param_type, identifier: param_id} => {
+                        instructions.push(IntermediateInstr::LoadParam(param_type.clone(), param_index));
+                        
+                        let metadata = memory_map.get(&get_var_repr(func_id, param_id)).unwrap();
+                        instructions.push(IntermediateInstr::Store(param_type.clone(), metadata.address));
+                    },
+
+                    _ => panic!("Detected non-parameter node in function parameter list")
+                }
+
+                param_index += 1;
             }
 
             for stmt in statements {
-                gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()), identifier, label_context, symbol_table);
+                gen_intermediate_code(stmt, instructions, memory_map, Some(return_type.clone()), func_id, label_context, symbol_table);
             }
 
-            instructions.push(IntermediateInstr::FuncEnd(identifier.to_owned()));
+            instructions.push(IntermediateInstr::FuncEnd(func_id.to_owned()));
         },
 
         ASTNode::ReturnStatement {expression} => {
@@ -381,7 +395,6 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
         ASTNode::IndefLoop {statements, ..} => {
             let continue_label = get_next_label();
             let return_label = get_next_label();
-            println!("{} {}", continue_label, return_label);
             label_context.update_continue(continue_label.clone());
             label_context.update_break(return_label.clone());
 

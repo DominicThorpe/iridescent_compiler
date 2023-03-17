@@ -4,7 +4,8 @@
             "{}: # start subroutine",
             "\tmove $fp, $sp",
             "\tsw $fp, 0($sp)",
-            "\tsubi $sp, $sp, 4"
+            "\tsubi $sp, $sp, 4",
+            "\tsubi $sp, $sp {}"
         ],
 
         "end_func": [
@@ -703,7 +704,8 @@
                 "\tjal {}",
 
                 "\tlw $ra, 4($sp)",
-                "\taddi $sp, $sp, 4"
+                "\taddi $sp, $sp, 4",
+                "\taddi $sp, $sp, {}"
             ],
 
             "int": [
@@ -713,6 +715,7 @@
 
                 "\tlw $ra, 4($sp)",
                 "\taddi $sp, $sp, 4",
+                "\taddi $sp, $sp, {}",
 
                 "\tsw $a1, 0($sp)",
                 "\tsubiu $sp, $sp, 4"
@@ -725,10 +728,19 @@
 
                 "\tlw $ra, 4($sp)",
                 "\taddi $sp, $sp, 4",
+                "\taddi $sp, $sp, {}",
 
                 "\tsw $a0, 0($sp)",
                 "\tsw $a1, -4($sp)",
                 "\tsubiu $sp, $sp, 8"
+            ]
+        },
+
+        "load_param": {
+            "int": [
+                "\tlw $t0, {}($fp) # load int parameter",
+                "\tsw $t0, 0($sp)",
+                "\tsubiu $sp, $sp, 4"
             ]
         },
 
