@@ -804,6 +804,25 @@
                 "\tsle $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "float": [
+                "\taddi $sp, $sp, 4 # test greater or equal byte",
+                "\tlwc1 $f0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlwc1 $f2, 0($sp)",
+
+                "\taddi $t7, $zero, 1",
+                "\tmtc1 $t7, $f25",
+                "\tmtc1 $zero, $f24",
+
+                "\tc.lt.s $f0, $f2",
+                "\tmovt.s $f0, $f24",
+                "\tmovf.s $f0, $f25",
+                "\tmfc1 $t0, $f0",
+
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -843,6 +862,25 @@
                 "\tslt $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "float": [
+                "\taddi $sp, $sp, 4 # test greater or equal byte",
+                "\tlwc1 $f0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlwc1 $f2, 0($sp)",
+
+                "\taddi $t7, $zero, 1",
+                "\tmtc1 $t7, $f25",
+                "\tmtc1 $zero, $f24",
+
+                "\tc.le.s $f0, $f2",
+                "\tmovt.s $f0, $f24",
+                "\tmovf.s $f0, $f25",
+                "\tmfc1 $t0, $f0",
+
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -858,7 +896,7 @@
             ],
 
             "long": [
-                "\taddi $sp, $sp, 8 # test greater or equal long",
+                "\taddi $sp, $sp, 8 # test less than long",
                 "\tlw $t0, 0($sp)",
                 "\tlw $t1, -4($sp)",
                 "\taddi $sp, $sp, 8",
@@ -879,6 +917,25 @@
                 "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tsge $t0, $t2, $t0",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "float": [
+                "\taddi $sp, $sp, 4 # test less than float",
+                "\tlwc1 $f0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlwc1 $f2, 0($sp)",
+
+                "\taddi $t7, $zero, 1",
+                "\tmtc1 $t7, $f25",
+                "\tmtc1 $zero, $f24",
+
+                "\tc.le.s $f0, $f2",
+                "\tmovf.s $f0, $f24",
+                "\tmovt.s $f0, $f25",
+                "\tmfc1 $t0, $f0",
+
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ]
@@ -920,6 +977,25 @@
                 "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tsgt $t0, $t2, $t0",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "float": [
+                "\taddi $sp, $sp, 4 # test less or equal float",
+                "\tlwc1 $f0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlwc1 $f2, 0($sp)",
+
+                "\taddi $t7, $zero, 1",
+                "\tmtc1 $t7, $f25",
+                "\tmtc1 $zero, $f24",
+
+                "\tc.lt.s $f0, $f2",
+                "\tmovf.s $f0, $f24",
+                "\tmovt.s $f0, $f25",
+                "\tmfc1 $t0, $f0",
+
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ]
