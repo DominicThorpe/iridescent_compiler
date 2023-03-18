@@ -43,6 +43,13 @@
                 "\tlwc1 $f4, {} # push float",
                 "\tswc1 $f4, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "double": [
+                "\tl.d $f4, {} # push double",
+                "\tswc1 $f4, 0($sp)",
+                "\tswc1 $f5, -4($sp)",
+                "\tsubi $sp, $sp, 8"
             ]
         },
 
@@ -71,6 +78,14 @@
                 "\taddi $sp, $sp, 4 # store float",
                 "\tlwc1 $f0, 0($sp)",
                 "\tswc1 $f0, -{}($fp)"
+            ],
+
+            "double": [
+                "\taddi $sp, $sp, 8 # store double",
+                "\tlwc1 $f0, 0($sp)",
+                "\tlwc1 $f1, -4($sp)",
+                "\tswc1 $f0, -{}($fp)",
+                "\tswc1 $f1, -{}($fp)"
             ]
         },
 
@@ -100,6 +115,14 @@
                 "\tlwc1 $f0, -{}($fp) # load float",
                 "\tswc1 $f0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "double": [
+                "\tlwc1 $f0, -{}($fp) # load double",
+                "\tlwc1 $f1, -{}($fp)",
+                "\tswc1 $f0, 0($sp)",
+                "\tswc1 $f1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
             ]
         },
 
@@ -125,6 +148,12 @@
             "float": [
                 "\taddi $sp, $sp, 4 # return float",
                 "\tlw $a1, 0($sp)"
+            ],
+
+            "double": [
+                "\taddi $sp, $sp, 8 # return long",
+                "\tlw $a0, 0($sp)",
+                "\tlw $a1, -4($sp)"
             ]
         },
 
@@ -171,6 +200,21 @@
                 "\tadd.s $f0, $f2, $f0",
                 "\tswc1 $f0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "double": [
+                "\taddi $sp, $sp, 8 # add long",
+                "\tlwc1 $f0, 0($sp)",
+                "\tlwc1 $f1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlwc1 $f2, 0($sp)",
+                "\tlwc1 $f3, -4($sp)",
+
+                "\tadd.d $f0, $f0, $f2",
+
+                "\tswc1 $f0, 0($sp)",
+                "\tswc1 $f1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
             ]
         },
 
@@ -223,6 +267,21 @@
                 "\tsub.s $f0, $f2, $f0",
                 "\tswc1 $f0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "double": [
+                "\taddi $sp, $sp, 8 # sub double",
+                "\tlwc1 $f0, 0($sp)",
+                "\tlwc1 $f1, -4($sp)",
+                "\taddi $sp, $sp, 8",
+                "\tlwc1 $f2, 0($sp)",
+                "\tlwc1 $f3, -4($sp)",
+
+                "\tsub.d $f0, $f2, $f0",
+
+                "\tswc1 $f0, 0($sp)",
+                "\tswc1 $f1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
             ]
         },
 

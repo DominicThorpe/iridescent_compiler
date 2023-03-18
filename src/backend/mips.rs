@@ -170,6 +170,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         mips_instrs.push(get_target_code("mips", "push", Some("float"), vec![label]));
                     },
 
+                    Argument::Double(value) => {
+                        stack_types.push(Type::Double);
+
+                        let label = get_next_label();
+                        text_section.push(format!("\t{}: .double {}", label, value));
+                        mips_instrs.push(get_target_code("mips", "push", Some("double"), vec![label]));
+                    },
+
                     _ => todo!()
                 }
             },
@@ -230,6 +238,21 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         stack_types.pop();
                     },
 
+                    Type::Double => {
+                        // if the key does not exist, add a new key to represent a new local variable
+                        if !stack_id_offset_map.contains_key(&id) {
+                            current_var_offset += 8;
+                            stack_id_offset_map.insert(id, current_var_offset);
+                        }
+
+                        mips_instrs.push(get_target_code("mips", "store", Some("double"), vec![
+                            stack_id_offset_map.get(&id).unwrap().to_string(),
+                            (stack_id_offset_map.get(&id).unwrap() - 4).to_string()
+                        ]));
+
+                        stack_types.pop();
+                    },
+
                     _ => todo!()
                 }
             },
@@ -266,6 +289,15 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         mips_instrs.push(get_target_code("mips", "load", Some("float"), vec![offset.to_string()]));
                     },
 
+                    Type::Double => {
+                        stack_types.push(Type::Double);
+
+                        let offset = stack_id_offset_map.get(&id).unwrap_or(&0);
+                        mips_instrs.push(get_target_code("mips", "load", Some("double"), vec![
+                            offset.to_string(), (offset - 4).to_string()
+                        ]));
+                    },
+
                     _ => todo!()
                 }
             },
@@ -276,6 +308,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "return", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "return", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "return", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "return", Some("double"), vec![])),
                     _ => todo!()
                 }
 
@@ -289,6 +322,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "add", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "add", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "add", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "add", Some("double"), vec![])),
                     _ => todo!()
                 }
             },
@@ -300,6 +334,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "sub", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "sub", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "sub", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "sub", Some("double"), vec![])),
                     _ => todo!()
                 }
             },
