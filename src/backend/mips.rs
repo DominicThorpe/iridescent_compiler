@@ -362,83 +362,101 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
          
             IntermediateInstr::Equal => {
                 let op_type = stack_types.pop().unwrap();
+                stack_types.pop();
+
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "test_equal", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_equal", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "test_equal", Some("byte"), vec![])),
                     _ => todo!()
                 }
+
+                stack_types.push(Type::Byte);
             },
 
             IntermediateInstr::NotEqual => {
                 let op_type = stack_types.pop().unwrap();
+                stack_types.pop();
+
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "test_unequal", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_unequal", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "test_unequal", Some("byte"), vec![])),
                     _ => todo!()
                 }
+
+                stack_types.push(Type::Byte);
             },
 
             IntermediateInstr::GreaterThan => {
                 let op_type = stack_types.pop().unwrap();
+                stack_types.pop();
+
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "test_greater_than", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_greater_than", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "test_greater_than", Some("byte"), vec![])),
                     _ => todo!()
                 }
+
+                stack_types.push(Type::Byte);
             },
 
             IntermediateInstr::GreaterEqual => {
                 let op_type = stack_types.pop().unwrap();
+                stack_types.pop();
+
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "test_greater_equal", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_greater_equal", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "test_greater_equal", Some("long"), vec![])),
                     _ => todo!()
                 }
+
+                stack_types.push(Type::Byte);
             },
 
             IntermediateInstr::LessThan => {
                 let op_type = stack_types.pop().unwrap();
+                stack_types.pop();
+
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "test_less_than", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_less_than", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "test_less_than", Some("byte"), vec![])),
                     _ => todo!()
                 }
+
+                stack_types.push(Type::Byte);
             },
 
             IntermediateInstr::LessEqual => {
                 let op_type = stack_types.pop().unwrap();
+                stack_types.pop();
+
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "test_less_equal", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_less_equal", Some("long"), vec![])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "test_less_equal", Some("byte"), vec![])),
                     _ => todo!()
                 }
+
+                stack_types.push(Type::Byte);
             },
 
             IntermediateInstr::LogicAnd => {
-                let op_type = stack_types.pop().unwrap();
-                match op_type {
-                    Type::Integer => mips_instrs.push(get_target_code("mips", "logical_and", Some("int"), vec![])),
-                    Type::Long => mips_instrs.push(get_target_code("mips", "logical_and", Some("long"), vec![])),
-                    _ => todo!()
-                }
+                stack_types.pop();
+                mips_instrs.push(get_target_code("mips", "logical_and", None, vec![]));
             },
 
             IntermediateInstr::LogicOr => {
-                let op_type = stack_types.pop().unwrap();
-                match op_type {
-                    Type::Integer => mips_instrs.push(get_target_code("mips", "logical_or", Some("int"), vec![])),
-                    Type::Long => mips_instrs.push(get_target_code("mips", "logical_or", Some("long"), vec![])),
-                    _ => todo!()
-                }
+                stack_types.pop();
+                mips_instrs.push(get_target_code("mips", "logical_or", None, vec![]));
             },
 
             IntermediateInstr::LogicXor => {
-                let op_type = stack_types.pop().unwrap();
-                match op_type {
-                    Type::Integer => mips_instrs.push(get_target_code("mips", "logical_xor", Some("int"), vec![])),
-                    Type::Long => mips_instrs.push(get_target_code("mips", "logical_xor", Some("long"), vec![])),
-                    _ => todo!()
-                }
+                stack_types.pop();
+                mips_instrs.push(get_target_code("mips", "logical_xor", None, vec![]));
             },
 
             IntermediateInstr::JumpZero(label) => {
@@ -446,6 +464,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 match op_type {
                     Type::Integer => mips_instrs.push(get_target_code("mips", "jump_zero", Some("int"), vec![label])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "jump_zero", Some("long"), vec![label])),
+                    Type::Byte => mips_instrs.push(get_target_code("mips", "jump_zero", Some("byte"), vec![label])),
                     _ => todo!()
                 }
             },

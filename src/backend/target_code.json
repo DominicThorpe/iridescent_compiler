@@ -56,7 +56,7 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # store byte",
+                "\taddi $sp, $sp, 4 # store byte",
                 "\tlb $t0, 0($sp)",
                 "\tsb $t0, -{}($fp)"
             ]
@@ -81,7 +81,7 @@
                 "\tlb $t0, -{}($fp) # load byte",
                 "\tandi $t0, $t0, 0xff",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -131,13 +131,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # add byte",
+                "\taddi $sp, $sp, 4 # add byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tadd $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -173,13 +173,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # sub byte",
+                "\taddi $sp, $sp, 4 # sub byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tsub $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -216,13 +216,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # multiply byte",
+                "\taddi $sp, $sp, 4 # multiply byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tmul $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -257,13 +257,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # divide byte",
+                "\taddi $sp, $sp, 4 # divide byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tdiv $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -293,13 +293,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # bitwise and byte",
+                "\taddi $sp, $sp, 4 # bitwise and byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tand $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -329,13 +329,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # bitwise or byte",
+                "\taddi $sp, $sp, 4 # bitwise or byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tor $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -365,13 +365,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # bitwise xor byte",
+                "\taddi $sp, $sp, 4 # bitwise xor byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\txor $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -422,11 +422,11 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # logical negation byte",
+                "\taddi $sp, $sp, 4 # logical negation byte",
                 "\tlb $t0, 0($sp)",
                 "\tslt $t0, $zero, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -451,11 +451,11 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # complement byte",
+                "\taddi $sp, $sp, 4 # complement byte",
                 "\tlb $t0, 0($sp)",
                 "\tnot $t0, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -485,13 +485,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # shift left byte",
+                "\taddi $sp, $sp, 4 # shift left byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tsllv $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -521,13 +521,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # logical right shift byte",
+                "\taddi $sp, $sp, 4 # logical right shift byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tsrlv $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -557,13 +557,13 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # arithmetic right shift byte",
+                "\taddi $sp, $sp, 4 # arithmetic right shift byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tsrlv $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -573,8 +573,8 @@
                 "\tlw $t0, 0($sp)",
                 "\taddi $sp, $sp, 4",
                 "\tlw $t2, 0($sp)",
-                "\tseq $t0, $t0, $t2",
-                "\tsw $t0, 0($sp)",
+                "\tsne $t0, $t0, $t2",
+                "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ],
 
@@ -586,24 +586,24 @@
                 "\tlw $t2, 0($sp)",
                 "\tlw $t3, -4($sp)",
 
-                "\tseq $t0, $t0, $t2",
-                "\tseq $t1, $t1, $t3",
+                "\tsne $t0, $t0, $t2",
+                "\tsne $t1, $t1, $t3",
                 "\tand $t0, $t0, $t1",
                 "\tmove $t1, $zero",
 
                 "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 12"
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # test equal byte",
+                "\taddi $sp, $sp, 4 # test equal byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
-                "\tseq $t0, $t0, $t2",
+                "\tsne $t0, $t0, $t2",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -613,8 +613,8 @@
                 "\tlw $t0, 0($sp)",
                 "\taddi $sp, $sp, 4",
                 "\tlw $t2, 0($sp)",
-                "\tsne $t0, $t0, $t2",
-                "\tsw $t0, 0($sp)",
+                "\tseq $t0, $t0, $t2",
+                "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ],
 
@@ -625,23 +625,23 @@
                 "\taddi $sp, $sp, 8",
                 "\tlw $t2, 0($sp)",
                 "\tlw $t3, -4($sp)",
-                "\tsne $t0, $t0, $t2",
-                "\tsne $t1, $t1, $t3",
+                "\tseq $t0, $t0, $t2",
+                "\tseq $t1, $t1, $t3",
                 "\tor $t0, $t0, $t1",
                 "\tmove $t1, $zero",
                 "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 12"
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # test not equal byte",
+                "\taddi $sp, $sp, 4 # test not equal byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
-                "\tsne $t0, $t0, $t2",
+                "\tseq $t0, $t0, $t2",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -651,8 +651,8 @@
                 "\tlw $t0, 0($sp)",
                 "\taddi $sp, $sp, 4",
                 "\tlw $t2, 0($sp)",
-                "\tsgt $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
+                "\tsle $t0, $t2, $t0",
+                "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ],
 
@@ -663,23 +663,23 @@
                 "\taddi $sp, $sp, 8",
                 "\tlw $t2, 0($sp)",
                 "\tlw $t3, -4($sp)",
-                "\tsgt $t0, $t2, $t0",
-                "\tsgt $t1, $t3, $t1",
+                "\tsle $t0, $t2, $t0",
+                "\tsle $t1, $t3, $t1",
                 "\tor $t0, $t0, $t1",
                 "\tmove $t1, $zero",
                 "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 12"
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # test greater than byte",
+                "\taddi $sp, $sp, 4 # test greater than byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
-                "\tsgt $t0, $t2, $t0",
+                "\tsle $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -689,8 +689,8 @@
                 "\tlw $t0, 0($sp)",
                 "\taddi $sp, $sp, 4",
                 "\tlw $t2, 0($sp)",
-                "\tsge $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
+                "\tslt $t0, $t2, $t0",
+                "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ],
 
@@ -707,18 +707,18 @@
                 "\tand $t0, $t0, $t1",
                 "\tmove $t1, $zero",
                 "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 12"
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # test greater or equal byte",
+                "\taddi $sp, $sp, 4 # test greater or equal byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
-                "\tsge $t0, $t2, $t0",
+                "\tslt $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -728,8 +728,8 @@
                 "\tlw $t0, 0($sp)",
                 "\taddi $sp, $sp, 4",
                 "\tlw $t2, 0($sp)",
-                "\tslt $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
+                "\tsge $t0, $t2, $t0",
+                "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ],
 
@@ -740,23 +740,23 @@
                 "\taddi $sp, $sp, 8",
                 "\tlw $t2, 0($sp)",
                 "\tlw $t3, -4($sp)",
-                "\tslt $t0, $t2, $t0",
-                "\tslt $t1, $t3, $t1",
+                "\tsge $t0, $t2, $t0",
+                "\tsge $t1, $t3, $t1",
                 "\tor $t0, $t0, $t1",
                 "\tmove $t1, $zero",
                 "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 12"
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # test less than byte",
+                "\taddi $sp, $sp, 4 # test less than byte",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
-                "\tslt $t0, $t2, $t0",
+                "\tsge $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -766,8 +766,8 @@
                 "\tlw $t0, 0($sp)",
                 "\taddi $sp, $sp, 4",
                 "\tlw $t2, 0($sp)",
-                "\tsle $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
+                "\tsgt $t0, $t2, $t0",
+                "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ],
 
@@ -780,105 +780,56 @@
                 "\tlw $t2, 0($sp)",
                 "\tlw $t3, -4($sp)",
 
-                "\tsgt $t0, $t2, $t0",
-                "\tsle $t1, $t3, $t1",
+                "\tsle $t0, $t2, $t0",
+                "\tsgt $t1, $t3, $t1",
                 "\tnot $t0, $t0",
                 "\tand $t0, $t0, $t1",
                 "\tmove $t1, $zero",
 
-                "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 12"
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # test less or equal int",
+                "\taddi $sp, $sp, 4 # test less or equal int",
                 "\tlb $t0, 0($sp)",
-                "\taddi $sp, $sp, 1",
+                "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
-                "\tsle $t0, $t2, $t0",
+                "\tsgt $t0, $t2, $t0",
                 "\tsb $t0, 0($sp)",
-                "\tsubi $sp, $sp, 1"
-            ]
-        },
-
-        "logical_and": {
-            "int": [
-                "\taddi $sp, $sp, 4 # logical and int",
-                "\tlw $t0, 0($sp)",
-                "\taddi $sp, $sp, 4",
-                "\tlw $t2, 0($sp)",
-                "\tand $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
-            ],
-
-            "long": [
-                "\taddi $sp, $sp, 8 # logical and long",
-                "\tlw $t0, 0($sp)",
-                "\tlw $t1, -4($sp)",
-                "\taddi $sp, $sp, 8",
-                "\tlw $t2, 0($sp)",
-                "\tlw $t3, -4($sp)",
-                "\tand $t0, $t0, $t2",
-                "\tand $t1, $t1, $t3",
-                "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
             ]
         },
 
-        "logical_or": {
-            "int": [
-                "\taddi $sp, $sp, 4 # logical or int",
-                "\tlw $t0, 0($sp)",
-                "\taddi $sp, $sp, 4",
-                "\tlw $t2, 0($sp)",
-                "\tor $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
-                "\tsubi $sp, $sp, 4"
-            ],
+        "logical_and": [
+            "\taddi $sp, $sp, 4 # logical and",
+            "\tlb $t0, 0($sp)",
+            "\taddi $sp, $sp, 4",
+            "\tlb $t2, 0($sp)",
+            "\tand $t0, $t2, $t0",
+            "\tsb $t0, 0($sp)",
+            "\tsubi $sp, $sp, 4"
+        ],
 
-            "long": [
-                "\taddi $sp, $sp, 8 # logical or long",
-                "\tlw $t0, 0($sp)",
-                "\tlw $t1, -4($sp)",
-                "\taddi $sp, $sp, 8",
-                "\tlw $t2, 0($sp)",
-                "\tlw $t3, -4($sp)",
-                "\tor $t0, $t0, $t2",
-                "\tor $t1, $t1, $t3",
-                "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
-            ]
-        },
+        "logical_or": [
+            "\taddi $sp, $sp, 4 # logical or",
+            "\tlb $t0, 0($sp)",
+            "\taddi $sp, $sp, 4",
+            "\tlb $t2, 0($sp)",
+            "\tor $t0, $t2, $t0",
+            "\tsb $t0, 0($sp)",
+            "\tsubi $sp, $sp, 4"
+        ],
 
-        "logical_xor": {
-            "int": [
-                "\taddi $sp, $sp, 4 # logical xor int",
-                "\tlw $t0, 0($sp)",
-                "\taddi $sp, $sp, 4",
-                "\tlw $t2, 0($sp)",
-                "\txor $t0, $t2, $t0",
-                "\tsw $t0, 0($sp)",
-                "\tsubi $sp, $sp, 4"
-            ],
-
-            "long": [
-                "\taddi $sp, $sp, 8 # logical xor long",
-                "\tlw $t0, 0($sp)",
-                "\tlw $t1, -4($sp)",
-                "\taddi $sp, $sp, 8",
-                "\tlw $t2, 0($sp)",
-                "\tlw $t3, -4($sp)",
-                "\txor $t0, $t0, $t2",
-                "\txor $t1, $t1, $t3",
-                "\tsw $t0, 0($sp)",
-                "\tsw $t1, -4($sp)",
-                "\tsubi $sp, $sp, 8"
-            ]
-        },
+        "logical_xor": [
+            "\taddi $sp, $sp, 4 # logical xor",
+            "\tlb $t0, 0($sp)",
+            "\taddi $sp, $sp, 4",
+            "\tlb $t2, 0($sp)",
+            "\txor $t0, $t2, $t0",
+            "\tsb $t0, 0($sp)",
+            "\tsubi $sp, $sp, 4"
+        ],
 
         "jump_zero": {
             "int": [
@@ -899,7 +850,7 @@
             ],
 
             "byte": [
-                "\taddi $sp, $sp, 1 # jump zero byte",
+                "\taddi $sp, $sp, 4 # jump zero byte",
                 "\tlb $t0, 0($sp)",
                 "\tbnez $t0, {}"
             ]
@@ -953,7 +904,7 @@
                 "\taddi $sp, $sp, {}",
 
                 "\tsb $a1, 0($sp)",
-                "\tsubiu $sp, $sp, 1"
+                "\tsubiu $sp, $sp, 4"
             ]
         },
 
@@ -975,7 +926,7 @@
             "byte": [
                 "\tlb $t0, {}($fp) # load byte parameter",
                 "\tsb $t0, 0($sp)",
-                "\tsubiu $sp, $sp, 1"
+                "\tsubiu $sp, $sp, 4"
             ]
         },
 
@@ -984,7 +935,7 @@
         ],
 
         "label": [
-            "\n\n{}:"
+            "{}:"
         ]
     }
 }
