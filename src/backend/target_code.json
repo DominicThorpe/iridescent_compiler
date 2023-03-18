@@ -503,9 +503,11 @@
             "float": [
                 "\taddi $sp, $sp, 4 # logical negation float",
                 "\tlwc1 $f0, 0($sp)",
+
                 "\taddi $t7, $zero, 1",
                 "\tmtc1 $t7, $f25",
                 "\tmtc1 $zero, $f24",
+
                 "\tc.le.s $f0, $f24",
                 "\tmovf.s $f0, $f24",
                 "\tmovt.s $f0, $f25",
@@ -688,6 +690,25 @@
                 "\tsne $t0, $t0, $t2",
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "float": [
+                "\taddi $sp, $sp, 4 # test equal float",
+                "\tlwc1 $f0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlwc1 $f2, 0($sp)",
+
+                "\taddi $t7, $zero, 1",
+                "\tmtc1 $t7, $f25",
+                "\tmtc1 $zero, $f24",
+
+                "\tc.eq.s $f0, $f2",
+                "\tmovt.s $f0, $f24",
+                "\tmovf.s $f0, $f25",
+                "\tmfc1 $t0, $f0",
+
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -724,6 +745,25 @@
                 "\taddi $sp, $sp, 4",
                 "\tlb $t2, 0($sp)",
                 "\tseq $t0, $t0, $t2",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "float": [
+                "\taddi $sp, $sp, 4 # test equal float",
+                "\tlwc1 $f0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlwc1 $f2, 0($sp)",
+
+                "\taddi $t7, $zero, 1",
+                "\tmtc1 $t7, $f25",
+                "\tmtc1 $zero, $f24",
+
+                "\tc.eq.s $f0, $f2",
+                "\tmovf.s $f0, $f24",
+                "\tmovt.s $f0, $f25",
+                "\tmfc1 $t0, $f0",
+
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ]
