@@ -346,6 +346,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "mult", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "mult", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "mult", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "mult", Some("double"), vec![])),
                     _ => todo!()
                 }
             },
@@ -357,6 +358,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "div", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "div", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "div", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "div", Some("double"), vec![])),
                     _ => todo!()
                 }
             },
@@ -367,7 +369,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "bitwise_and", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "bitwise_and", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "bitwise_and", Some("byte"), vec![])),
-                    Type::Float => panic!("Cannot apply & operator to type float"),
+                    Type::Float | Type::Double => panic!("Cannot apply & operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
@@ -378,7 +380,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "bitwise_or", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "bitwise_or", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "bitwise_or", Some("byte"), vec![])),
-                    Type::Float => panic!("Cannot apply | operator to type float"),
+                    Type::Float | Type::Double => panic!("Cannot apply | operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
@@ -389,7 +391,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "bitwise_xor", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "bitwise_xor", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "bitwise_xor", Some("byte"), vec![])),
-                    Type::Float => panic!("Cannot apply ^ operator to type float"),
+                    Type::Float | Type::Double => panic!("Cannot apply ^ operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
@@ -400,6 +402,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "numerical_neg", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "numerical_neg", Some("long"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "numerical_neg", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "numerical_neg", Some("double"), vec![])),
                     Type::Byte => panic!("Numerical negation cannot be applied to type byte"),
                     _ => todo!()
                 }
@@ -411,6 +414,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "complement", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "complement", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "complement", Some("byte"), vec![])),
+                    Type::Float | Type::Double => panic!("Cannot apply ~ operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
@@ -422,6 +426,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "logical_neg", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "logical_neg", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "logical_neg", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "logical_neg", Some("double"), vec![])),
                     _ => todo!()
                 }
             },
@@ -432,6 +437,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "sll", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "sll", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "sll", Some("byte"), vec![])),
+                    Type::Float | Type::Double => panic!("Cannot apply >> operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
@@ -442,6 +448,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "srl", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "srl", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "srl", Some("byte"), vec![])),
+                    Type::Float | Type::Double => panic!("Cannot apply << operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
@@ -452,6 +459,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Integer => mips_instrs.push(get_target_code("mips", "sra", Some("int"), vec![])),
                     Type::Long => mips_instrs.push(get_target_code("mips", "sra", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "sra", Some("byte"), vec![])),
+                    Type::Float | Type::Double => panic!("Cannot apply >>> operator to type {:?}", op_type),
                     _ => todo!()
                 }
             },
