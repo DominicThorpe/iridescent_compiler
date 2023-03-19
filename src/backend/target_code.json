@@ -830,6 +830,30 @@
 
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "double": [
+                "\taddi $sp, $sp, 8 # test equal double",
+	            "\tlwc1 $f0, 0($sp)",
+	            "\tlwc1 $f1, -4($sp)",
+	            "\taddi $sp, $sp, 8",
+	            "\tlwc1 $f2, 0($sp)",
+	            "\tlwc1 $f3, -4($sp)",
+
+	            "\taddi $t7, $zero, 1",
+	            "\tmtc1 $t7, $f26",
+	            "\tcvt.d.w $f26, $f26",
+	            "\tmtc1 $zero, $f24",
+	            "\tcvt.d.w $f24, $f24",
+
+	            "\tc.eq.d $f0, $f2",
+	            "\tmovt.d $f0, $f24",
+	            "\tmovf.d $f0, $f26",
+
+	            "\tcvt.w.d $f0, $f0",
+	            "\tmfc1 $t0, $f0",
+	            "\tsb $t0, 0($sp)",
+	            "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -887,6 +911,30 @@
 
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "double": [
+                "\taddi $sp, $sp, 8 # test equal double",
+	            "\tlwc1 $f0, 0($sp)",
+	            "\tlwc1 $f1, -4($sp)",
+	            "\taddi $sp, $sp, 8",
+	            "\tlwc1 $f2, 0($sp)",
+	            "\tlwc1 $f3, -4($sp)",
+
+	            "\taddi $t7, $zero, 1",
+	            "\tmtc1 $t7, $f26",
+	            "\tcvt.d.w $f26, $f26",
+	            "\tmtc1 $zero, $f24",
+	            "\tcvt.d.w $f24, $f24",
+
+	            "\tc.eq.d $f0, $f2",
+	            "\tmovf.d $f0, $f24",
+	            "\tmovt.d $f0, $f26",
+                
+	            "\tcvt.w.d $f0, $f0",
+	            "\tmfc1 $t0, $f0",
+	            "\tsb $t0, 0($sp)",
+	            "\tsubi $sp, $sp, 4"
             ]
         },
 
