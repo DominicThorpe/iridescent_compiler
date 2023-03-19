@@ -473,6 +473,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Long => mips_instrs.push(get_target_code("mips", "test_equal", Some("long"), vec![])),
                     Type::Byte => mips_instrs.push(get_target_code("mips", "test_equal", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "test_equal", Some("float"), vec![])),
+                    Type::Double => mips_instrs.push(get_target_code("mips", "test_equal", Some("double"), vec![])),
                     _ => todo!()
                 }
 

@@ -559,15 +559,15 @@
             ],
 
             "double": [
-                "\taddi $sp, $sp, 4 # numerical negation double",
-                "\tlwc1 $f1, 0($sp)",
-                "\tlwc1 $f0, -4($sp)",
+                "\taddi $sp, $sp, 8 # numerical negation double",
+                "\tlwc1 $f0, 0($sp)",
+                "\tlwc1 $f1, -4($sp)",
 
                 "\tneg.d $f0, $f0",
 
-                "\tswc1 $f1, 0($sp)",
-                "\tswc1 $f0, -4($sp)",
-                "\tsubi $sp, $sp, 4"
+                "\tswc1 $f0, 0($sp)",
+                "\tswc1 $f1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
             ]
         },
 
@@ -617,19 +617,23 @@
             ],
 
             "double": [
-                "\taddi $sp, $sp, 4 # logical negation double",
+                "\taddi $sp, $sp, 8 # logical negation double",
                 "\tlwc1 $f0, 0($sp)",
                 "\tlwc1 $f1, -4($sp)",
 
                 "\taddi $t7, $zero, 1",
-                "\tmtc1 $t7, $f25",
+                "\tmtc1 $t7, $f26",
                 "\tmtc1 $zero, $f24",
+                "\tcvt.d.w $f24, $f24",
+                "\tcvt.d.w $f26, $f26",
 
                 "\tc.le.d $f0, $f24",
-                "\tmovf.s $f0, $f24",
-                "\tmovt.s $f0, $f25",
-                "\tswc1 $f0, 0($sp)",
-                "\tsubi $sp, $sp, 4"
+                "\tmovf.d $f0, $f24",
+                "\tmovt.d $f0, $f26",
+                "\tcvt.w.d $f1, $f0",
+                "\tsw $zero, 0($sp)",
+                "\tswc1 $f1, -4($sp)",
+                "\tsubi $sp, $sp, 8"
             ]
         },
 
