@@ -215,12 +215,16 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
                         
                         let metadata = memory_map.get(&get_var_repr(func_id, param_id)).unwrap();
                         instructions.push(IntermediateInstr::Store(param_type.clone(), metadata.address));
+
+                        match param_type {
+                            Type::Long | Type::Double => param_index += 2,
+                            Type::Void => param_index += 0,
+                            _ => param_index += 1
+                        }
                     },
 
                     _ => panic!("Detected non-parameter node in function parameter list")
                 }
-
-                param_index += 1;
             }
 
             for stmt in statements {

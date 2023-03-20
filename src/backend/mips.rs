@@ -34,11 +34,11 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
                 match primitive_type {
                     Type::Float => frame_size += 4,
                     Type::Double => frame_size += 8,
-                    Type::Char => frame_size += 1,
-                    Type::Byte => frame_size += 1,
+                    Type::Char => frame_size += 4,
+                    Type::Byte => frame_size += 4,
                     Type::Integer => frame_size += 4,
                     Type::Long => frame_size += 8,
-                    Type::Boolean => frame_size += 1,
+                    Type::Boolean => frame_size += 4,
                     Type::String => todo!(),
                     Type::Void => panic!("Type void cannot be stored on the stack")
                 }
@@ -590,10 +590,26 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
             },
 
             IntermediateInstr::LoadParam(param_type, offset) => {
-                mips_instrs.push(get_target_code("mips", "load_param", 
-                    Some(&param_type.to_string()), 
-                    vec![((offset + 2) * 4).to_string()]
-                ));
+                match param_type {
+                    Type::Integer | Type::Byte | Type::Float => {
+                        mips_instrs.push(get_target_code("mips", "load_param", 
+                            Some(&param_type.to_string()), 
+                            vec![((offset + 2) * 4).to_string()]
+                        ));
+                    },
+
+                    Type::Long | Type::Double => {
+                        mips_instrs.push(get_target_code("mips", "load_param", 
+                            Some(&param_type.to_string()), 
+                            vec![
+                                ((offset + 2) * 4).to_string(),
+                                ((offset + 3) * 4).to_string()
+                            ]
+                        ));
+                    },
+
+                    _ => todo!()
+                }
             },
 
             IntermediateInstr::Jump(label) => mips_instrs.push(get_target_code("mips", "jump", None, vec![label])),
