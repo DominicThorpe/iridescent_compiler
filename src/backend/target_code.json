@@ -53,8 +53,8 @@
             ],
 
             "char": [
-                "\tlw $t4, {} # push character",
-                "\tsw $t4, 0($sp)",
+                "\tlb $t4, {} # push character",
+                "\tsb $t4, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ]
         },
@@ -878,6 +878,16 @@
 	            "\tmfc1 $t0, $f0",
 	            "\tsb $t0, 0($sp)",
 	            "\tsubi $sp, $sp, 4"
+            ],
+
+            "char": [
+                "\taddi $sp, $sp, 4 # test equal character",
+                "\tlb $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlb $t2, 0($sp)",
+                "\tsne $t0, $t0, $t2",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -959,6 +969,16 @@
 	            "\tmfc1 $t0, $f0",
 	            "\tsb $t0, 0($sp)",
 	            "\tsubi $sp, $sp, 4"
+            ],
+
+            "char": [
+                "\taddi $sp, $sp, 4 # test unequal character",
+                "\tlb $t0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlb $t2, 0($sp)",
+                "\tseq $t0, $t0, $t2",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
