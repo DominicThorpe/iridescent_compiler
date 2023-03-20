@@ -544,6 +544,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Float => mips_instrs.push(get_target_code("mips", "test_equal", Some("float"), vec![])),
                     Type::Double => mips_instrs.push(get_target_code("mips", "test_equal", Some("double"), vec![])),
                     Type::Char => mips_instrs.push(get_target_code("mips", "test_equal", Some("char"), vec![])),
+                    Type::Boolean => mips_instrs.push(get_target_code("mips", "test_equal", Some("bool"), vec![])),
                     Type::Void => panic!("Cannot apply == operator to type {:?}", op_type),
                     _ => todo!()
                 }
@@ -562,6 +563,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Float => mips_instrs.push(get_target_code("mips", "test_unequal", Some("float"), vec![])),
                     Type::Double => mips_instrs.push(get_target_code("mips", "test_unequal", Some("double"), vec![])),
                     Type::Char => mips_instrs.push(get_target_code("mips", "test_unequal", Some("char"), vec![])),
+                    Type::Boolean => mips_instrs.push(get_target_code("mips", "test_unequal", Some("bool"), vec![])),
                     Type::Void => panic!("Cannot apply != operator to type {:?}", op_type),
                     _ => todo!()
                 }
