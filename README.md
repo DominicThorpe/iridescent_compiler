@@ -210,18 +210,17 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on implementing target code generation for the MIPS architecture. The followign features still need to be implemented:
- - [ ] Function calls
- - [ ] Returning from functions
+Currently working on implementing target code generation for the MIPS architecture. The following features still need to be implemented:
  - [ ] Type casting
  - [ ] Standard input 
  - [ ] Standard output
- - [ ] Non-int datatypes
-   - [ ] long
-   - [ ] byte
-   - [ ] float
-   - [ ] double
-   - [ ] char
+ - [ ] Datatypes
+   - [ ] int
+   - [x] long
+   - [x] byte
+   - [x] float
+   - [x] double
+   - [x] char
    - [ ] string
 
 

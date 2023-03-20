@@ -186,6 +186,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         mips_instrs.push(get_target_code("mips", "push", Some("char"), vec![label]));
                     },
 
+                    Argument::Boolean(value) => {
+                        stack_types.push(Type::Boolean);
+                        match value {
+                            true => mips_instrs.push(get_target_code("mips", "push", Some("bool"), vec![String::from("1")])),
+                            false => mips_instrs.push(get_target_code("mips", "push", Some("bool"), vec![String::from("0")])),
+                        }
+                    },
+
                     _ => todo!()
                 }
             },
@@ -275,6 +283,20 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         stack_types.pop();
                     },
 
+                    Type::Boolean => {
+                        // if the key does not exist, add a new key to represent a new local variable
+                        if !stack_id_offset_map.contains_key(&id) {
+                            current_var_offset += 4;
+                            stack_id_offset_map.insert(id, current_var_offset);
+                        }
+    
+                        mips_instrs.push(get_target_code("mips", "store", Some("bool"), vec![
+                            stack_id_offset_map.get(&id).unwrap().to_string()
+                        ]));
+    
+                        stack_types.pop();
+                    },
+
                     Type::Void => panic!("Cannot store type Void"),
                     _ => todo!()
                 }
@@ -328,6 +350,13 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         mips_instrs.push(get_target_code("mips", "load", Some("char"), vec![offset.to_string()]));
                     },
 
+                    Type::Boolean => {
+                        stack_types.push(Type::Boolean);
+
+                        let offset = stack_id_offset_map.get(&id).unwrap_or(&0);
+                        mips_instrs.push(get_target_code("mips", "load", Some("bool"), vec![offset.to_string()]));
+                    },
+
                     Type::Void => panic!("Cannot load type Void"),
                     _ => todo!()
                 }
@@ -341,8 +370,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Float => mips_instrs.push(get_target_code("mips", "return", Some("float"), vec![])),
                     Type::Double => mips_instrs.push(get_target_code("mips", "return", Some("double"), vec![])),
                     Type::Char => mips_instrs.push(get_target_code("mips", "return", Some("char"), vec![])),
+                    Type::Boolean => mips_instrs.push(get_target_code("mips", "return", Some("bool"), vec![])),
                     Type::Void => panic!("Cannot return type Void"),
-                    _ => todo!()
+                    Type::String => todo!()
                 }
 
                 stack_types.pop();
@@ -464,6 +494,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Byte => mips_instrs.push(get_target_code("mips", "logical_neg", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "logical_neg", Some("float"), vec![])),
                     Type::Double => mips_instrs.push(get_target_code("mips", "logical_neg", Some("double"), vec![])),
+                    Type::Boolean => mips_instrs.push(get_target_code("mips", "logical_neg", Some("bool"), vec![])),
                     Type::Char | Type::Void => panic!("Logical negation cannot be applied to type {:?}", op_type),
                     _ => todo!()
                 }

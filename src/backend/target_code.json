@@ -56,6 +56,12 @@
                 "\tlb $t4, {} # push character",
                 "\tsb $t4, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "bool": [
+                "\tli $t4, {} # push boolean",
+                "\tsb $t4, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -96,6 +102,12 @@
 
             "char": [
                 "\taddi $sp, $sp, 4 # store character",
+                "\tlb $t0, 0($sp)",
+                "\tsb $t0, -{}($fp)"
+            ],
+
+            "bool": [
+                "\taddi $sp, $sp, 4 # store boolean",
                 "\tlb $t0, 0($sp)",
                 "\tsb $t0, -{}($fp)"
             ]
@@ -142,6 +154,12 @@
                 "\tandi $t0, $t0, 0xff",
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "bool": [
+                "\tlb $t0, -{}($fp) # load boolean",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -177,6 +195,11 @@
 
             "char": [
                 "\taddi $sp, $sp, 4 # return char",
+                "\tlw $a1, 0($sp)"
+            ],
+
+            "bool": [
+                "\taddi $sp, $sp, 4 # return boolean",
                 "\tlw $a1, 0($sp)"
             ]
         },
@@ -658,6 +681,14 @@
                 "\tsw $zero, 0($sp)",
                 "\tswc1 $f1, -4($sp)",
                 "\tsubi $sp, $sp, 8"
+            ],
+
+            "bool": [
+                "\taddi $sp, $sp, 4 # logical negation boolean",
+                "\tlb $t0, 0($sp)",
+                "\tseq $t0, $zero, $t0",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
