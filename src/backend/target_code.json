@@ -50,6 +50,12 @@
                 "\tswc1 $f4, 0($sp)",
                 "\tswc1 $f5, -4($sp)",
                 "\tsubi $sp, $sp, 8"
+            ],
+
+            "char": [
+                "\tlw $t4, {} # push character",
+                "\tsw $t4, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -86,6 +92,12 @@
                 "\tlwc1 $f1, -4($sp)",
                 "\tswc1 $f0, -{}($fp)",
                 "\tswc1 $f1, -{}($fp)"
+            ],
+
+            "char": [
+                "\taddi $sp, $sp, 4 # store character",
+                "\tlb $t0, 0($sp)",
+                "\tsb $t0, -{}($fp)"
             ]
         },
 
@@ -123,6 +135,13 @@
                 "\tswc1 $f0, 0($sp)",
                 "\tswc1 $f1, -4($sp)",
                 "\tsubi $sp, $sp, 8"
+            ],
+
+            "char": [
+                "\tlb $t0, -{}($fp) # load character",
+                "\tandi $t0, $t0, 0xff",
+                "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -154,6 +173,11 @@
                 "\taddi $sp, $sp, 8 # return double",
                 "\tlw $a0, 0($sp)",
                 "\tlw $a1, -4($sp)"
+            ],
+
+            "char": [
+                "\taddi $sp, $sp, 4 # return char",
+                "\tlw $a1, 0($sp)"
             ]
         },
 
