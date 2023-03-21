@@ -1501,6 +1501,18 @@
 
                 "\tsb $a1, 0($sp)",
                 "\tsubiu $sp, $sp, 4"
+            ],
+
+            "bool": [
+                "\tsw $ra, 0($sp) # call byte function {}",
+                "\tsubiu $sp, $sp, 4",
+                "\tjal {}",
+
+                "\tlw $ra, 4($sp)",
+                "\taddi $sp, $sp, {}",
+
+                "\tsb $a1, 0($sp)",
+                "\tsubiu $sp, $sp, 4"
             ]
         },
 
@@ -1541,6 +1553,12 @@
 
             "char": [
                 "\tlb $t0, {}($fp) # load character parameter",
+                "\tsb $t0, 0($sp)",
+                "\tsubiu $sp, $sp, 4"
+            ],
+
+            "bool": [
+                "\tlb $t0, {}($fp) # load boolean parameter",
                 "\tsb $t0, 0($sp)",
                 "\tsubiu $sp, $sp, 4"
             ]
