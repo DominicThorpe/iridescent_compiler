@@ -62,6 +62,12 @@
                 "\tli $t4, {} # push boolean",
                 "\tsb $t4, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "string": [
+                "\tla $t4, {} # push string ptr",
+                "\tsw $t4, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -110,6 +116,12 @@
                 "\taddi $sp, $sp, 4 # store boolean",
                 "\tlb $t0, 0($sp)",
                 "\tsb $t0, -{}($fp)"
+            ],
+
+            "string": [
+                "\taddi $sp, $sp, 4 # store string ptr",
+                "\tlw $t0, 0($sp)",
+                "\tsw $t0, -{}($fp)"
             ]
         },
 
@@ -160,6 +172,12 @@
                 "\tlb $t0, -{}($fp) # load boolean",
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "string": [
+                "\tlw $t0, -{}($fp) # load string ptr",
+                "\tsw $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -200,6 +218,11 @@
 
             "bool": [
                 "\taddi $sp, $sp, 4 # return boolean",
+                "\tlw $a1, 0($sp)"
+            ],
+
+            "string": [
+                "\taddi $sp, $sp, 4 # return string ptr",
                 "\tlw $a1, 0($sp)"
             ]
         },

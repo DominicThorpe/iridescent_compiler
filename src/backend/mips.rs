@@ -39,7 +39,7 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
                     Type::Integer => frame_size += 4,
                     Type::Long => frame_size += 8,
                     Type::Boolean => frame_size += 4,
-                    Type::String => todo!(),
+                    Type::String => frame_size += 4, // pointer
                     Type::Void => panic!("Type void cannot be stored on the stack")
                 }
             },
@@ -194,7 +194,13 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         }
                     },
 
-                    _ => todo!()
+                    Argument::String(value) => {
+                        stack_types.push(Type::String);
+
+                        let label = get_next_label();
+                        text_section.push(format!("\t{}: .asciiz \"{}\"", label, value));
+                        mips_instrs.push(get_target_code("mips", "push", Some("string"), vec![label]));
+                    }
                 }
             },
 
@@ -297,8 +303,18 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         stack_types.pop();
                     },
 
-                    Type::Void => panic!("Cannot store type Void"),
-                    _ => todo!()
+                    Type::String => {
+                        // if the key does not exist, add a new key to represent a new local variable
+                        if !stack_id_offset_map.contains_key(&id) {
+                            current_var_offset += 4;
+                            stack_id_offset_map.insert(id, current_var_offset);
+                        }
+
+                        mips_instrs.push(get_target_code("mips", "store", Some("string"), vec![stack_id_offset_map.get(&id).unwrap().to_string()]));
+                        stack_types.pop();
+                    },
+
+                    Type::Void => panic!("Cannot store type Void")
                 }
             },
 
@@ -357,8 +373,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         mips_instrs.push(get_target_code("mips", "load", Some("bool"), vec![offset.to_string()]));
                     },
 
-                    Type::Void => panic!("Cannot load type Void"),
-                    _ => todo!()
+                    Type::String => {
+                        stack_types.push(Type::String);
+
+                        let offset = stack_id_offset_map.get(&id).unwrap_or(&0);
+                        mips_instrs.push(get_target_code("mips", "load", Some("string"), vec![offset.to_string()]));
+                    },
+
+                    Type::Void => panic!("Cannot load type Void")
                 }
             },
 
@@ -371,8 +393,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Double => mips_instrs.push(get_target_code("mips", "return", Some("double"), vec![])),
                     Type::Char => mips_instrs.push(get_target_code("mips", "return", Some("char"), vec![])),
                     Type::Boolean => mips_instrs.push(get_target_code("mips", "return", Some("bool"), vec![])),
-                    Type::Void => panic!("Cannot return type Void"),
-                    Type::String => todo!()
+                    Type::String => mips_instrs.push(get_target_code("mips", "return", Some("string"), vec![])),
+                    Type::Void => panic!("Cannot return type Void")
                 }
 
                 stack_types.pop();
