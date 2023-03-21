@@ -123,6 +123,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
 
     mips_instrs.push("\tj main # start program execution\n\n".to_owned());
     // mips_instrs.append(&mut add_library("math64_mips"));
+    mips_instrs.append(&mut add_library("string_mips"));
 
     for instr in intermediate_code {
         match instr {
@@ -567,8 +568,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Double => mips_instrs.push(get_target_code("mips", "test_equal", Some("double"), vec![])),
                     Type::Char => mips_instrs.push(get_target_code("mips", "test_equal", Some("char"), vec![])),
                     Type::Boolean => mips_instrs.push(get_target_code("mips", "test_equal", Some("bool"), vec![])),
-                    Type::Void => panic!("Cannot apply == operator to type {:?}", op_type),
-                    _ => todo!()
+                    Type::String => mips_instrs.push(get_target_code("mips", "test_equal", Some("string"), vec![])),
+                    Type::Void => panic!("Cannot apply == operator to type {:?}", op_type)
                 }
 
                 stack_types.push(Type::Byte);
@@ -586,8 +587,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Double => mips_instrs.push(get_target_code("mips", "test_unequal", Some("double"), vec![])),
                     Type::Char => mips_instrs.push(get_target_code("mips", "test_unequal", Some("char"), vec![])),
                     Type::Boolean => mips_instrs.push(get_target_code("mips", "test_unequal", Some("bool"), vec![])),
-                    Type::Void => panic!("Cannot apply != operator to type {:?}", op_type),
-                    _ => todo!()
+                    Type::String => mips_instrs.push(get_target_code("mips", "test_unequal", Some("string"), vec![])),
+                    Type::Void => panic!("Cannot apply != operator to type {:?}", op_type)
                 }
 
                 stack_types.push(Type::Byte);

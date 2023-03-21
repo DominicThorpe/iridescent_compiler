@@ -952,6 +952,19 @@
                 "\tsne $t0, $t0, $t2",
                 "\tsb $t0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
+            ],
+
+            "string": [
+                "\taddi $sp, $sp, 4 # test equal string ptrs",
+                "\tlw $a0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $a1, 0($sp)",
+                
+                "\tjal __strcmp",
+                "\tseq $a0, $a0, $zero",
+
+                "\tsw $a0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
             ]
         },
 
@@ -1052,6 +1065,18 @@
                 "\tlb $t2, 0($sp)",
                 "\tseq $t0, $t0, $t2",
                 "\tsb $t0, 0($sp)",
+                "\tsubi $sp, $sp, 4"
+            ],
+
+            "string": [
+                "\taddi $sp, $sp, 4 # test equal string ptrs",
+                "\tlw $a0, 0($sp)",
+                "\taddi $sp, $sp, 4",
+                "\tlw $a1, 0($sp)",
+                
+                "\tjal __strcmp",
+
+                "\tsw $a0, 0($sp)",
                 "\tsubi $sp, $sp, 4"
             ]
         },

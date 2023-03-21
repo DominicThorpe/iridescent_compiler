@@ -215,7 +215,7 @@ Currently working on implementing target code generation for the MIPS architectu
  - [ ] Standard input 
  - [ ] Standard output
  - [ ] Datatypes
-   - [ ] int
+   - [x] int
    - [x] long
    - [x] byte
    - [x] float
