@@ -409,8 +409,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                     Type::Byte => mips_instrs.push(get_target_code("mips", "add", Some("byte"), vec![])),
                     Type::Float => mips_instrs.push(get_target_code("mips", "add", Some("float"), vec![])),
                     Type::Double => mips_instrs.push(get_target_code("mips", "add", Some("double"), vec![])),
-                    Type::Char | Type::Void => panic!("Cannot apply + operator to type {:?}", op_type),
-                    _ => todo!()
+                    Type::String => mips_instrs.push(get_target_code("mips", "add", Some("string"), vec![])),
+                    Type::Char | Type::Boolean | Type::Void => panic!("Cannot apply + operator to type {:?}", op_type)
                 }
             },
 

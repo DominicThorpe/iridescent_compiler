@@ -285,6 +285,17 @@
                 "\tswc1 $f0, 0($sp)",
                 "\tswc1 $f1, -4($sp)",
                 "\tsubi $sp, $sp, 8"
+            ],
+
+            "string": [
+                "\taddi $sp, $sp, 4 # add (concatenate) string",
+                "\tlw $a0, 0($sp)",
+                "\tlw $a1, 4($sp)",
+
+                "\tjal __strcat",
+
+                "\tsw $a0, 0($sp)",
+                "\taddi $sp, $sp, -4"
             ]
         },
 
