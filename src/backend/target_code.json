@@ -1572,6 +1572,18 @@
 
                 "\tsb $a1, 0($sp)",
                 "\tsubiu $sp, $sp, 4"
+            ],
+
+            "string": [
+                "\tsw $ra, 0($sp) # call string function {}",
+                "\taddi $sp, $sp, -4",
+                "\tjal {}",
+
+                "\tlw $ra, 4($sp)",
+                "\taddi $sp, $sp, {}",
+
+                "\tsw $a1, 0($sp)",
+                "\taddi $sp, $sp, -4"
             ]
         },
 
@@ -1620,6 +1632,12 @@
                 "\tlb $t0, {}($fp) # load boolean parameter",
                 "\tsb $t0, 0($sp)",
                 "\tsubiu $sp, $sp, 4"
+            ],
+
+            "string": [
+                "\tlw $t0, {}($fp) # load string parameter",
+                "\tsw $t0, 0($sp)",
+                "\taddi $sp, $sp, -4"
             ]
         },
 

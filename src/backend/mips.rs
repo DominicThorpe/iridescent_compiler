@@ -697,7 +697,8 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
 
             IntermediateInstr::LoadParam(param_type, offset) => {
                 match param_type {
-                    Type::Integer | Type::Byte | Type::Float | Type::Char | Type::Boolean => {
+                    Type::Integer | Type::Byte | Type::Float | Type::Char | Type::Boolean | Type::String => {
+                        println!("Param type: {:?}", param_type.to_string());
                         mips_instrs.push(get_target_code("mips", "load_param", 
                             Some(&param_type.to_string()), 
                             vec![((offset + 2) * 4).to_string()]
@@ -714,8 +715,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                         ));
                     },
 
-                    Type::Void => panic!("Cannot load parameter of type Void"),
-                    _ => todo!()
+                    Type::Void => panic!("Cannot load parameter of type Void")
                 }
             },
 

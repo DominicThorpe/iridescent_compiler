@@ -28,7 +28,7 @@ impl ToString for Type {
             Type::Boolean => String::from("bool"),
             Type::Float => String::from("float"),
             Type::Double => String::from("double"),
-            Type::String => String::from("str")
+            Type::String => String::from("string")
         }
     }
 }
