@@ -228,10 +228,7 @@ pub enum ASTNode {
         terms: Vec<ASTNode>
     },
 
-    InputStatement {
-        identifier: String
-    },
-
+    InputStatement(usize),
     Identifier(String),
     Break,
     Continue

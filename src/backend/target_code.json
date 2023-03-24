@@ -1648,6 +1648,20 @@
             "\tsyscall"
         ],
 
+        "in": [
+            "\taddi $v0, $zero, 9 # get string input",
+            "\tli $a0, {}",
+            "\tsyscall",
+            "\tmove $a0, $v0",
+
+            "\taddi $v0, $zero, 8",
+            "\tli $a1, {}",
+            "\tsyscall",
+
+            "\tsw $a0, 0($sp)",
+            "\taddi, $sp, $sp, -4"
+        ],
+
         "jump": [
             "\tj {}"
         ],

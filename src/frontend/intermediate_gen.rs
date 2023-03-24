@@ -49,8 +49,8 @@ pub enum IntermediateInstr {
     LessEqual,
     Equal,
     NotEqual,
-    In, // not implemented
-    Out, // not implemented
+    Out,
+    In(usize),
     LoadParam(Type, usize), // not implemented
     Jump(String),
     JumpZero(String),
@@ -241,7 +241,9 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
 
         ASTNode::VarDeclStatement {identifier, value, var_type, ..} => {
             match &**value {
-                ASTNode::Expression {..} | ASTNode::TernaryExpression {..} => gen_intermediate_code(value, instructions, memory_map, None, func_name, label_context, symbol_table),
+                ASTNode::Expression {..} 
+                  | ASTNode::TernaryExpression {..}
+                  | ASTNode::InputStatement(_) => gen_intermediate_code(value, instructions, memory_map, None, func_name, label_context, symbol_table),
                 _ => panic!("Cannot generate intermdeiate code in variable assignment for {:?}", value)
             }
 
@@ -510,11 +512,7 @@ fn gen_intermediate_code(root:&ASTNode, instructions:&mut Vec<IntermediateInstr>
             }
         },
 
-        ASTNode::InputStatement {identifier} => {
-            instructions.push(IntermediateInstr::In);
-            let metadata = memory_map.get(&get_var_repr(func_name, identifier)).unwrap();
-            instructions.push(IntermediateInstr::Store(metadata.var_type.clone(), metadata.address));
-        }
+        ASTNode::InputStatement(length) => instructions.push(IntermediateInstr::In(*length))
     }
 }
 

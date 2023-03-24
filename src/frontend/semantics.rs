@@ -804,6 +804,7 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             match &**value {
                 ASTNode::Expression {..} => validate_expression_of_type(&value, &var_type, symbol_table, &scope_history).unwrap(),
                 ASTNode::TernaryExpression {..} => validate_ternary_expression(&value, symbol_table, &scope_history, &var_type).unwrap(),
+                ASTNode::InputStatement(_) => semantic_validation_subtree(&value, symbol_table, &scope_history).unwrap(),
                 other => panic!("{:?} is not a valid variable declaration expression", other)
             }
         }
@@ -924,15 +925,9 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             }
         },
 
-        ASTNode::InputStatement {identifier} => {
-            let id_type = symbol_table.get_identifier_type_in_scope(identifier, &scope_history).unwrap();
-            if id_type != Type::String {
-                panic!("Only strings can be the target of an input statement, not {:?}", id_type);
-            }
-
-            let mutability = symbol_table.get_mutability_in_scope(identifier, &scope_history).unwrap();
-            if mutability != Mutability::Mutable {
-                panic!("Target of an input statement must be mutable");
+        ASTNode::InputStatement(length) => {
+            if length <= &1 {
+                panic!("Size of input buffer must be at least 2 to allow for 1 character of input plus '\\0'")
             }
         }
 

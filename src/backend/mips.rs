@@ -727,6 +727,11 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 mips_instrs.push(get_target_code("mips", "out", None, vec![]));
             },
 
+            IntermediateInstr::In(length) => {
+                stack_types.push(Type::String);
+                mips_instrs.push(get_target_code("mips", "in", None, vec![length.to_string(), length.to_string()]))
+            },
+
             IntermediateInstr::Jump(label) => mips_instrs.push(get_target_code("mips", "jump", None, vec![label])),
             IntermediateInstr::Label(label) => mips_instrs.push(get_target_code("mips", "label", None, vec![label])),
             

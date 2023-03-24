@@ -67,6 +67,7 @@ fn get_expr_from_expr_or_term(pair: pest::iterators::Pair<Rule>) -> ASTNode {
     match pair.as_rule() {
         Rule::expression => build_ast_from_expression(pair),
         Rule::ternary_expr => build_ast_from_ternary_expr(pair),
+        Rule::input => build_ast_from_input_expression(pair),
         Rule::term => {
             ASTNode::Expression {
                 lhs: Box::new(build_ast_from_term(pair)),
@@ -92,6 +93,21 @@ fn get_file_contents(filename:&str) -> Result<String, Box<dyn Error>> {
     file.read_to_string(&mut contents)?;
 
     Ok(contents)
+}
+
+
+/**
+ * Takes a `Pair` representing an input expression such as `input 40` and returns a subtree of the AST
+ * representing that node.
+ */
+fn build_ast_from_input_expression(pair: pest::iterators::Pair<Rule>) -> ASTNode {
+    let mut parent = pair.into_inner();
+    let length:usize = i64::try_from(get_int_from_str_literal(parent.next().unwrap().as_str()))
+                    .ok().expect("Could not convert int literal to i64")
+                    .try_into()
+                    .expect("Could not convert int literal to usize");
+    
+    ASTNode::InputStatement(length)
 }
 
 
@@ -697,20 +713,6 @@ fn build_ast_from_print(pair: pest::iterators::Pair<Rule>) -> ASTNode {
 
 
 /**
- * Takes a `Pair` representing an input statement and returns it as a subtree of the AST, 
- * including children nodes.
- */
-fn build_ast_from_input(pair: pest::iterators::Pair<Rule>) -> ASTNode {
-    let mut parent = pair.into_inner();
-    let output = parent.next().unwrap().as_str().to_string();
-
-    ASTNode::InputStatement {
-        identifier: output
-    }
-}
-
-
-/**
  * Takes a `Pair` representing a statement and dispatches it to the relevant AST builder function.
  */
 fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mut SymbolTable) -> ASTNode {
@@ -728,7 +730,6 @@ fn build_ast_from_statement(pair: pest::iterators::Pair<Rule>, symbol_table: &mu
         Rule::continue_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
         Rule::break_stmt => build_ast_from_loop_ctrl(pair.into_inner().next().unwrap()),
         Rule::print => build_ast_from_print(pair.into_inner().next().unwrap()),
-        Rule::input => build_ast_from_input(pair.into_inner().next().unwrap()),
         _ => panic!("Could not parse statement \"{:?}\"", token.as_rule())
     }
 }

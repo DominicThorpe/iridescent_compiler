@@ -45,7 +45,7 @@ function_decl = {"fn" ~ primitive_type ~ identifier ~ "(" ~ param_list? ~ ")" ~ 
 function_call = {identifier ~ "(" ~ value_list? ~ ")"}
 
 print = {"print" ~ "<<" ~ ((identifier | value) ~ "<<")* ~ (identifier | value) ~ ";"}
-input = {"input" ~ ">>" ~ identifier ~ ";"}
+input = {"input " ~ int_literal}
 
 binary_operator = {"+" | "-" | "*" | "/"  | "&" | "|" | "^" | ">>>" | ">>" | "<<"}
 unary_operator = {"~" | "!" | "-"}
@@ -66,8 +66,7 @@ statement = !{var_assign
 			  | for_loop 
 			  | indef_loop 
 			  | while_loop
-			  | print 
-			  | input
+			  | print
 			  | if_structure 
 			  | function_call ~ ";" 
 			  | continue_stmt 
@@ -95,6 +94,6 @@ else_stmt = {"else" ~ "{" ~ statement* ~ "}"}
 if_structure = {if_stmt ~ elif_stmt* ~ else_stmt?}
 
 mutability_mod = {"mut" | "const"}
-var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (expression | ternary_expr | term) ~ ";"}
-var_assign = {identifier ~ "=" ~ (expression | ternary_expr | term) ~ ";"}
+var_decl = {"let " ~ mutability_mod? ~ primitive_type ~ identifier ~ "=" ~ (input | expression | ternary_expr | term) ~ ";"}
+var_assign = {identifier ~ "=" ~ (expression | ternary_expr | term | input) ~ ";"}
 return_stmt = {"return " ~ (expression | term) ~ ";"}
