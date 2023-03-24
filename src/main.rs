@@ -5,9 +5,18 @@ mod errors;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
+use std::env;
 
 fn main() {
-    let filename = "idk.iri";
+    let cmd_args:Vec<String> = env::args().collect();
+
+    let filename = &cmd_args[1];
+    let output_name = format!("{}.asm", &cmd_args[2]);
+    if !filename.ends_with(".iri") {
+        panic!("Input filename must have the .iri file extension");
+    }
+
+    println!("Compiling {} into {}", filename, &cmd_args[2]);
     let ast = frontend::parser::parse(filename).unwrap();
     // println!("{:#?}\n\n\n", ast);
     let symbol_table = frontend::semantics::generate_symbol_table(ast.clone());
@@ -19,5 +28,10 @@ fn main() {
         println!("{}", instr);
     }
 
-    backend::mips::generate_mips(instructions, "mips.asm", &symbol_table).unwrap();
+    match &*cmd_args[3] {
+        "-mips" => backend::mips::generate_mips(instructions, &output_name, &symbol_table).unwrap(),
+        "-ird" => panic!("Iridium architecture compilation is not yet supported"),
+        "-x64" => panic!("The x86-64 architecture compilation is not yet supported"),
+        option => panic!("{} is not a valid target code flag", option)
+    }
 }

@@ -3,6 +3,21 @@
 
 The iridescent programming language is a personal project designed to be run on the Iridium Computer Emulator. It is designed to be simple, yet powerful, with features such as strong, static typing, and immutable-by-default variables. Most of all, however, it is designed to be easy to write a compiler for, so that a computer scientist with even just a basic understanding of compiler principles can write one as a beginner's project.
 
+To run the project, use the following syntax:
+`cargo run <input filename> <output filename> <target flag>`
+
+The valid target flags are:
+  - `-mips` for MIPS
+  - `-x64` for x86-64
+  - `-ird` for the iridium computer
+
+Currently only MIPS is implemented, and x86-64 may or may not be developed.
+
+For example, the following is valid:
+`cargo run fibonnacci.iri output -mips`
+
+The input filename must have the `.iri` extension, and the output file will have the `.asm` file extension added automatically.
+
 
 ## Syntax
 
@@ -197,6 +212,27 @@ Expressions are chains of actions or simple identifiers or values which statemen
     - logical negation (!)
 
 
+### Input and Output
+
+User input allows the user to input a certain number of characters into the standard input, which is then assigned to a variable. It follows this format:
+`let <mutability>? string <identifier> = input <max characters>;`
+
+For example, to allow the user to input a maximum of 64 characters and store it in an immutable variable, do:
+`let string my_input = input 64`
+
+Note that the last character of the input must be a `\0` character or there could be overflow, and this is an unsafe function. The length of the string must be at least 2 so that there is room for at least 1 character and a trailing `\0`.
+
+To output a string (only a string can be outputted), use the format:
+`print << <string variable>;`
+
+Much like in C++, you can put as many strings as you like in the print statement, provided they are separated by `<<`. Therefore, the following are all valid:
+```
+print << hello_world;
+print << hello << "world";
+print << string_a << string_b << "hi there" << string_c << string_d;
+```
+
+
 ## How it Works
 
 The functioning of the compiler can be split into the following stages:
@@ -212,8 +248,6 @@ The functioning of the compiler can be split into the following stages:
 
 Currently working on implementing target code generation for the MIPS architecture. The following features still need to be implemented:
  - [ ] Type casting
- - [ ] Standard input 
- - [ ] Standard output
 
 
 # The Future
