@@ -719,6 +719,14 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 }
             },
 
+            IntermediateInstr::Out => {
+                if stack_types.pop().expect("Stack types stack is empty") != Type::String {
+                    panic!("Invalid type found for Out instruction - only strings can be printed");
+                }
+
+                mips_instrs.push(get_target_code("mips", "out", None, vec![]));
+            },
+
             IntermediateInstr::Jump(label) => mips_instrs.push(get_target_code("mips", "jump", None, vec![label])),
             IntermediateInstr::Label(label) => mips_instrs.push(get_target_code("mips", "label", None, vec![label])),
             

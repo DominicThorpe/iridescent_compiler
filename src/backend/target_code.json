@@ -289,8 +289,8 @@
 
             "string": [
                 "\taddi $sp, $sp, 4 # add (concatenate) string",
-                "\tlw $a0, 0($sp)",
-                "\tlw $a1, 4($sp)",
+                "\tlw $a1, 0($sp)",
+                "\tlw $a0, 4($sp)",
 
                 "\tjal __strcat",
 
@@ -1640,6 +1640,13 @@
                 "\taddi $sp, $sp, -4"
             ]
         },
+
+        "out": [
+            "\taddi $v0, $zero, 4 # print string",
+            "\taddi $sp, $sp, 4",
+            "\tlw $a0, 0($sp)",
+            "\tsyscall"
+        ],
 
         "jump": [
             "\tj {}"

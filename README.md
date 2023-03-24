@@ -214,14 +214,6 @@ Currently working on implementing target code generation for the MIPS architectu
  - [ ] Type casting
  - [ ] Standard input 
  - [ ] Standard output
- - [ ] Datatypes
-   - [x] int
-   - [x] long
-   - [x] byte
-   - [x] float
-   - [x] double
-   - [x] char
-   - [ ] string
 
 
 # The Future
