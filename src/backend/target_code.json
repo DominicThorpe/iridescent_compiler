@@ -1693,6 +1693,54 @@
                     "\tswc1 $f0, 4($sp)",
                     "\taddi $sp, $sp, -4"
                 ]
+            },
+
+            "float": {
+                "int": [
+                    "l.s $f0, 4($sp) # cast float to int",
+                    "cvt.s.w $f0, $f0",
+                    "swc1 $f0, 4($sp)"
+                ],
+
+                "byte": [
+                    "l.d $f0, 4($sp)  # cast float to byte",
+                    "cvt.s.w $f0, $f0",
+                    "mfc1 $t0, $f0",
+                    "andi $t0, $t0, 0x00FF",
+                    "sw $t0, 4($sp)"
+                ],
+
+                "double": [
+                    "l.d $f0, 4($sp)  # cast float to double",
+                    "cvt.s.d $f0, $f0",
+                    "s.s $f0, 8($sp)",
+                    "addi $sp, $sp, 4"
+                ]
+            },
+
+            "double": {
+                "int": [
+                    "addi $sp, $sp, 4 # cast double to int",
+                    "l.d $f0, 0($sp)",
+                    "cvt.d.w $f0, $f0",
+                    "swc1 $f0, 4($sp)"
+                ],
+
+                "byte": [
+                    "addi $sp, $sp, 4 # cast double to byte",
+                    "l.d $f0, 0($sp)",
+                    "cvt.d.w $f0, $f0",
+                    "mfc1 $t0, $f0",
+                    "andi $t0, $t0, 0x00FF",
+                    "sw $t0, 4($sp)"
+                ],
+
+                "float": [
+                    "addi $sp, $sp, 4 # cast double to float",
+                    "l.d $f0, 0($sp)",
+                    "cvt.d.s $f0, $f0",
+                    "swc1 $f0, 0($sp)"
+                ]
             }
         },
 
