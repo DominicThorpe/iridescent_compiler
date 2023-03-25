@@ -1666,6 +1666,14 @@
                     "\tswc1 $f0, 4($sp)",
                     "\tsubiu $sp, $sp, 4"
                 ]
+            },
+
+            "long": {
+                "int": [
+                    "\taddi $sp, $sp, 4 # cast long to int",
+                    "\tlw $t0, 0($sp)",
+                    "\tsw $t0, 4($sp)"
+                ]
             }
         },
 
