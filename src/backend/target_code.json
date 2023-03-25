@@ -1648,6 +1648,23 @@
                     "\tsw $t0, 0($sp)",
                     "\tsw $zero, 4($sp)",
                     "\tsubiu $sp, $sp, 4"
+                ],
+
+                "float": [
+                    "\tlw $t0, 4($sp) # cast int to float",
+                    "\tmtc1 $t0, $f0",
+                    "\tcvt.s.w $f0, $f0",
+                    "\tswc1 $f0, 4($sp)"
+                ],
+
+                "double": [
+                    "\tlw $t0, 4($sp) # cast int to double",
+                    "\tmtc1 $t0, $f0",
+                    "\tcvt.d.w $f0, $f0",
+
+                    "\tswc1 $f1, 0($sp)",
+                    "\tswc1 $f0, 4($sp)",
+                    "\tsubiu $sp, $sp, 4"
                 ]
             }
         },

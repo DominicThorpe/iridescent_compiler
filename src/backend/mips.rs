@@ -120,7 +120,6 @@ fn get_target_code(architecture:&str, instr:&str, op_type:Option<&str>, argument
         }
     };
 
-    let target_code = target_code;
     insert_target_code_args(instr, target_code, arguments)
 }
 
@@ -159,7 +158,7 @@ fn get_next_label() -> String {
  */
 fn generate_cast_code(architecture:&str, from:Type, into:Type)  -> Result<String, Box<dyn Error>> {
     let json = read_target_code_json();
-    let target_code = serde_json::to_string(&json[architecture]["cast"][from.to_string()][into.to_string()])
+    let mut target_code = serde_json::to_string(&json[architecture]["cast"][from.to_string()][into.to_string()])
                         .expect(&format!("Could not convert from {} to {}", from.to_string(), into.to_string()))
                         .split("\",")
                         .map(|item| {
@@ -171,6 +170,7 @@ fn generate_cast_code(architecture:&str, from:Type, into:Type)  -> Result<String
             .replace("\\t", "\t")
     }).collect::<Vec<String>>().join("\n");
 
+    target_code += "\n";
     Ok(target_code)
 }
 
@@ -190,7 +190,7 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
 
     mips_instrs.push("\tj main # start program execution\n\n".to_owned());
     // mips_instrs.append(&mut add_library("math64_mips"));
-    mips_instrs.append(&mut add_library("string_mips"));
+    // mips_instrs.append(&mut add_library("string_mips"));
 
     for instr in intermediate_code {
         match instr {
