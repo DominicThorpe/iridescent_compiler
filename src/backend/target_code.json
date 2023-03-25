@@ -1674,6 +1674,25 @@
                     "\tlw $t0, 0($sp)",
                     "\tsw $t0, 4($sp)"
                 ]
+            },
+            
+            "byte": {
+                "char": [],
+                "int": [],
+
+                "float": [
+                    "\tlwc1 $f0, 4($sp) # cast byte to float",
+                    "\tcvt.s.w $f0, $f0",
+                    "\tswc1 $f0, 4($sp)"
+                ],
+
+                "double": [
+                    "\tlwc1 $f0, 4($sp) # cast byte to double",
+                    "\tcvt.d.w $f0, $f0",
+                    "\tswc1 $f1, 0($sp)",
+                    "\tswc1 $f0, 4($sp)",
+                    "\taddi $sp, $sp, -4"
+                ]
             }
         },
 
