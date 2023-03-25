@@ -52,41 +52,85 @@ fn get_frame_size(function_id:&str, symbol_table:&SymbolTable) -> u64 {
 }
 
 
-fn get_target_code(architecture:&str, instr:&str, op_type:Option<&str>, arguments:Vec<String>) -> String {
+/**
+ * Opens the file *target_code.json* and returns the contents as structured data. 
+ */
+fn read_target_code_json() -> serde_json::Value {
     let mut file = OpenOptions::new().read(true).open("src/backend/target_code.json").expect("Could not read target_code.json");
     let mut json = String::new();
     file.read_to_string(&mut json).unwrap();
-    let json:serde_json::Value = serde_json::from_str(&json).expect("Could not parse JSON from target_code.json");
 
-    let target_code:Vec<String> = match op_type {
-        Some(op_type) => {
-            serde_json::to_string(&json[architecture][instr][op_type]).unwrap().split("\",").map(|item| {
-                item.replace("[", "").replace("]", "").replace("\"", "").trim().to_string().replace("\\t", "\t")
-            }).collect()
-        },
+    serde_json::from_str(&json).expect("Could not parse JSON from target_code.json")
+}
 
-        None => {
-            serde_json::to_string(&json[architecture][instr]).unwrap().split("\",").map(|item| {
-                item.replace("[", "").replace("]", "").replace("\"", "").trim().to_string().replace("\\t", "\t")
-            }).collect()
-        }
-    };
-    let mut target_code = target_code.join("\n");
 
-    let required_arg_count = target_code.matches("{}").count();
+/**
+ * Finds all the occurrences of `{}` in the provided target code lines and replaces them with the given
+ * arguments, and returns a vector of the new code. Adds a newline character at the end of the returned
+ * `String`.
+ */
+fn insert_target_code_args(instr:&str, original:String, arguments:Vec<String>) -> String {
+    let mut new_target_code = original.clone();
+    let required_arg_count = new_target_code.matches("{}").count();
     if required_arg_count != arguments.len() {
         panic!("Instruction {} takes {} arguments, but {} were provided", instr, required_arg_count, arguments.len());
     }
 
     for arg in arguments {
-        target_code = target_code.replacen("{}", &arg, 1);
+        new_target_code = new_target_code.replacen("{}", &arg, 1);
     }
 
-    target_code += "\n";
-    target_code
+    new_target_code += "\n";
+    new_target_code
 }
 
 
+/**
+ * Gets the contents of the file *target_code.json* and uses the data contained therein to get the target 
+ * code equivalent for the specified archiecture. Arguments are substituted into the target code where the 
+ * `{}` symbol is found.
+ * 
+ * #### Examples
+ * `mips_instrs.push(get_target_code("mips", "push", Some("byte"), vec![value.to_string()]));`
+ * `mips_instrs.push(get_target_code("mips", "out", None, vec![]));`
+ */
+fn get_target_code(architecture:&str, instr:&str, op_type:Option<&str>, arguments:Vec<String>) -> String {
+    let json = read_target_code_json();
+    let target_code:String = match op_type {
+        Some(op_type) => {
+            serde_json::to_string(&json[architecture][instr][op_type]).unwrap().split("\",").map(|item| {
+                item.replace("[", "")
+                    .replace("]", "")
+                    .replace("\"", "")
+                    .trim()
+                    .to_string()
+                    .replace("\\t", "\t")
+            }).collect::<Vec<String>>().join("\n")
+        },
+
+        None => {
+            serde_json::to_string(&json[architecture][instr]).unwrap().split("\",").map(|item| {
+                item.replace("[", "")
+                    .replace("]", "")
+                    .replace("\"", "")
+                    .trim()
+                    .to_string()
+                    .replace("\\t", "\t")
+            }).collect::<Vec<String>>().join("\n")
+        }
+    };
+
+    let target_code = target_code;
+    insert_target_code_args(instr, target_code, arguments)
+}
+
+
+/**
+ * Prepends the code contained in the specified library to the source code.
+ * 
+ * #### Examples
+ * `add_library("string_mips.asm");`
+ */
 #[allow(dead_code)]
 fn add_library(library_name:&str) -> Vec<String> {
     let file = OpenOptions::new().read(true).open(format!("src/backend/{}.asm", library_name)).unwrap();
@@ -105,6 +149,29 @@ fn get_next_label() -> String {
     static NEXT_LABEL:AtomicUsize = AtomicUsize::new(1);
     let next_label = NEXT_LABEL.fetch_add(1, Ordering::Relaxed);
     format!("_t_{:x}", next_label)
+}
+
+
+/**
+ * Exclusively handles the generation of code concerning the `Cast` intermediate instruction. Extracted from
+ * `generate_mips` to properly handle the double-nested types needed for the JSON code to be interpreted
+ * correctly.
+ */
+fn generate_cast_code(architecture:&str, from:Type, into:Type)  -> Result<String, Box<dyn Error>> {
+    let json = read_target_code_json();
+    let target_code = serde_json::to_string(&json[architecture]["cast"][from.to_string()][into.to_string()])
+                        .expect(&format!("Could not convert from {} to {}", from.to_string(), into.to_string()))
+                        .split("\",")
+                        .map(|item| {
+        item.replace("[", "")
+            .replace("]", "")
+            .replace("\"", "")
+            .trim()
+            .to_string()
+            .replace("\\t", "\t")
+    }).collect::<Vec<String>>().join("\n");
+
+    Ok(target_code)
 }
 
 
@@ -732,10 +799,9 @@ pub fn generate_mips(intermediate_code:Vec<IntermediateInstr>, filename:&str, sy
                 mips_instrs.push(get_target_code("mips", "in", None, vec![length.to_string(), length.to_string()]))
             },
 
+            IntermediateInstr::Cast(from, into) => mips_instrs.push(generate_cast_code("mips", from, into).unwrap()),
             IntermediateInstr::Jump(label) => mips_instrs.push(get_target_code("mips", "jump", None, vec![label])),
-            IntermediateInstr::Label(label) => mips_instrs.push(get_target_code("mips", "label", None, vec![label])),
-            
-            _ => {}
+            IntermediateInstr::Label(label) => mips_instrs.push(get_target_code("mips", "label", None, vec![label]))
         }
     }
 

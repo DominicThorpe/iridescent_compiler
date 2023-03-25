@@ -1641,6 +1641,17 @@
             ]
         },
 
+        "cast": {
+            "int": {
+                "long": [
+                    "\tlw $t0, 4($sp) # cast int to long",
+                    "\tsw $t0, 0($sp)",
+                    "\tsw $zero, 4($sp)",
+                    "\tsubiu $sp, $sp, 4"
+                ]
+            }
+        },
+
         "out": [
             "\taddi $v0, $zero, 4 # print string",
             "\taddi $sp, $sp, 4",
