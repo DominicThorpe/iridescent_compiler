@@ -1680,6 +1680,13 @@
                 "char": [],
                 "int": [],
 
+                "long": [
+                    "\tlw $t0, 4($sp) # cast byte to long",
+                    "\tsw $t0, 0($sp)",
+                    "\tsw $zero, 4($sp)",
+                    "\taddi $sp, $sp, -4"
+                ],
+
                 "float": [
                     "\tlwc1 $f0, 4($sp) # cast byte to float",
                     "\tcvt.s.w $f0, $f0",
@@ -1741,6 +1748,10 @@
                     "cvt.d.s $f0, $f0",
                     "swc1 $f0, 0($sp)"
                 ]
+            },
+
+            "char": {
+                "byte": []
             }
         },
 
