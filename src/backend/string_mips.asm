@@ -135,4 +135,86 @@ __strcat:
     
     move $a0, $s6
     jr $ra
+
+
+
+# Takes a number in $a0 and outputs a pointer to its string representation in $a0, which
+# will be no more than 12 bytes.
+__tostring_int:
+    move $t0, $a0 # move argument into $t0
+
+    addi $v0, $zero, 9 # syscall code for sbrk
+    addi $a0, $zero, 12 # allocate 12 bytes
+    syscall # allocate 12 bytes of memory for max 12 digits of int
+
+    # move address of target string into $t9 and a copy into $t1
+    move $t1, $v0
+    move $t9, $v0
+
+    # check if sign bit set, add negative sign if it is, else skip
+    andi $t2, $t0, 0x80000000 # get sign bit
+    beqz $t2, __tostring_int_positive # skip adding '-' if positive
+
+    addi $t3, $t3, 0x2D # load 0x2D (ASCII '-') into $t1
+    sb $t3, 0($t1) # save '-' into the start of the string
+    addi $t1, $t1, 1 # go to next byte in string
+
+    abs $t0, $t0 # make int positive
+
+__tostring_int_positive:
+	li $t3, 1000000000
+
+__tostring_int_loop:
+	div $t0, $t3 # divide number by current digit divisor
+	mflo $t4 # move billion digit into $t4
+	mfhi $t0 # replace original number with remainder
+	
+	addi $t4, $t4, 0x30 # add 48 to quotient to convert number to ASCII representation
+	sb $t4, 0($t1)
+	addi $t1, $t1, 1 # move on to the next byte in the string
+	
+	div $t3, $t3, 10 # get next digit divisor by dividing current divisor by 10
+	beqz $t3, __tostring_int_end # if there are no more digits, print the result
+	
+	j __tostring_int_loop # otherwise, repeat the loop
+
+
+__tostring_int_end:
+	move $a0, $t1
+	jr $ra
+
+
+
+# Takes a number > 0 and < 255 in $a0 and outputs a pointer to its string representation in 
+# $a0, which will be no more than 4 bytes.
+__tostring_byte:
+    move $t0, $a0 # move argument into $t0
+    
+    addi $v0, $zero, 9 # syscall code for sbrk
+    addi $a0, $zero, 4 # allocate 4 bytes
+    syscall # allocate 4 bytes of memory for max 3 digits of int + '\0'
+    
+    # move address of target string into $t9 and a copy into $t1
+    move $t1, $v0
+    move $t9, $v0
+	li $t3, 100
+
+__tostring_byte_loop:
+	div $t0, $t3 # divide number by current digit divisor
+	mflo $t4 # move billion digit into $t4
+	mfhi $t0 # replace original number with remainder
+	
+	addi $t4, $t4, 0x30 # add 48 to quotient to convert number to ASCII representation
+	sb $t4, 0($t1)
+	addi $t1, $t1, 1 # move on to the next byte in the string
+	
+	div $t3, $t3, 10 # get next digit divisor by dividing current divisor by 10
+	beqz $t3, __tostring_byte_end # if there are no more digits, print the result
+	
+	j __tostring_byte_loop # otherwise, repeat the loop
+
+
+__tostring_byte_end:
+	move $a0, $t9
+	jr $ra
     

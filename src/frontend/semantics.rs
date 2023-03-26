@@ -880,8 +880,28 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
             };
 
             match from_type {
-                Type::Byte | Type::Integer | Type::Long | Type::Float | Type::Double => match into {
-                    Type::Byte | Type::Integer | Type::Long | Type::Float | Type::Double => {},
+                Type::Integer => match into {
+                    Type::Long | Type::Float | Type::Double | Type::String => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                },
+
+                Type::Long => match into {
+                    Type::Integer | Type::Double | Type::String => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                },
+
+                Type::Byte  => match into {
+                    Type::Integer | Type::Long | Type::Float | Type::Double | Type::Char | Type::String => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                },
+                
+                Type::Float => match into {
+                    Type::Integer | Type::Byte | Type::Double | Type::String => {},
+                    _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
+                },
+                
+                Type::Double => match into {
+                    Type::Byte | Type::Integer | Type::Long | Type::Float | Type::String => {},
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 },
 
@@ -891,12 +911,12 @@ fn semantic_validation_subtree(node:&ASTNode, symbol_table:&SymbolTable, scope_h
                 },
 
                 Type::Char => match into {
-                    Type::Char | Type::String => {},
+                    Type::Byte | Type::String => {},
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 }
 
                 Type::String => match into {
-                    Type::String => {},
+                    Type::Integer | Type::Long | Type::Byte | Type::Float | Type::Double => {},
                     _ => panic!("{:?} cannot be cast to {:?}", from_type, into)
                 }
 
