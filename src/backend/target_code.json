@@ -1670,8 +1670,7 @@
                 "string": [
                     "\tlw $a0, 4($sp) # cast int to string",
                     "\tjal __tostring_int",
-                    "\tsw $a0, 0($sp)",
-                    "\taddi $sp, $sp, -4"
+                    "\tsw $a0, 4($sp)"
                 ]
             },
 
@@ -1711,8 +1710,7 @@
                 "string": [
                     "\tlw $a0, 4($sp) # cast byte to string",
                     "\tjal __tostring_byte",
-                    "\tsw $a0, 0($sp)",
-                    "\taddi $sp, $sp, -4"
+                    "\tsw $a0, 4($sp)"
                 ]
             },
 
@@ -1766,6 +1764,14 @@
 
             "char": {
                 "byte": []
+            },
+
+            "string": {
+                "int": [
+                    "\tlw $a0, 4($sp) # cast string to int",
+                    "\tjal __fromstring_int",
+                    "\tsw $a0, 4($sp)"
+                ]
             }
         },
 

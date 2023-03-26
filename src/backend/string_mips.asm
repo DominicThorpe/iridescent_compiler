@@ -189,11 +189,11 @@ __tostring_int_end:
 # $a0, which will be no more than 4 bytes.
 __tostring_byte:
     move $t0, $a0 # move argument into $t0
-    
+
     addi $v0, $zero, 9 # syscall code for sbrk
     addi $a0, $zero, 4 # allocate 4 bytes
     syscall # allocate 4 bytes of memory for max 3 digits of int + '\0'
-    
+
     # move address of target string into $t9 and a copy into $t1
     move $t1, $v0
     move $t9, $v0
@@ -216,5 +216,68 @@ __tostring_byte_loop:
 
 __tostring_byte_end:
 	move $a0, $t9
+	jr $ra
+
+
+
+# Takes a pointer to the string representation of a 32 bit integer in $a0 and returns that 
+# number as an int in $a0.
+__fromstring_int:
+	# get the length of the string whicb is the number of digits
+	move $s0, $ra
+	move $s1, $a0 # save value of argument
+	jal __strlen
+	move $t5, $a0 # put length of string into $t5
+	move $ra, $s0
+
+    move $t0, $s1 # restore argument into $t0
+    move $t1, $zero # clear $t1 so it can hold the result
+    	
+    # check if sign bit set, add negative sign if it is, else skip
+	lb $t2, 0($t0) # get first character
+	li $t8, 0x2D # load ASCII value for '-' into $t8
+    seq $t9, $t2, $t8 # set $t9 if negative
+
+    beqz $t9, __fromstring_int_positive # skip next part if positive
+    addi $t0, $t0, 1 # else skip '-' character at start of string
+    addi $t5, $t5, -1 # decrement length of the string
+    	
+   
+__fromstring_int_positive:
+	# multiply coefficient by 10 ^ num digits in number (stored in $t5)
+	li $t3, 1
+	addi $t5, $t5, -1
+	beqz $t5, __fromstring_int_loop # skip loop if only 1 digit
+
+
+__fromstring_int_coefficient_loop:
+	beqz $t5, __fromstring_int_loop # break out of loop after num iterations = num digits
+	mul $t3, $t3, 10 # multiply coefficient by 10
+	addi $t5, $t5, -1 # decrement digit counter
+	j __fromstring_int_coefficient_loop
+
+
+__fromstring_int_loop:
+	lb $t4, 0($t0) # load digit character into $t4
+	addi $t4, $t4, -48 # subtract 48 from digit ASCII value to get number
+	mul $t4, $t4, $t3 # multiply current string digit by digit coefficient
+	add $t1, $t1, $t4 # add it to the total
+	
+	div $t3, $t3, 10 # get next digit divisor by dividing current divisor by 10
+	add $t0, $t0, 1
+	beqz $t3, __fromstring_int_handle_sign # if there are no more digits, handle the sign
+	
+	j __fromstring_int_loop # otherwise, repeat the loop
+
+
+__fromstring_int_handle_sign:
+	# handling negativity
+	beqz $t9, __fromstring_int_end # skip if number is positive
+	neg $t1, $t1 # else negate
+	j __fromstring_int_end
+
+
+__fromstring_int_end:	
+	move $a0, $t1
 	jr $ra
     
