@@ -246,7 +246,7 @@ The functioning of the compiler can be split into the following stages:
 
 ## State of Development
 
-Currently working on implementing target code generation for the MIPS architecture. The following features still need to be implemented:
+Currently working on implementing target code generation for the MIPS architecture with a focus on type casting. The following features still need to be implemented:
  - [ ] Type casting
 
 

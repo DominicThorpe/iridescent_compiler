@@ -1771,6 +1771,14 @@
                     "\tlw $a0, 4($sp) # cast string to int",
                     "\tjal __fromstring_int",
                     "\tsw $a0, 4($sp)"
+                ],
+
+                "byte": [
+                    "\tlw $a0, 4($sp) # cast string to byte",
+                    "\tjal __fromstring_int",
+                    "\tabs $a0, $a0",
+                    "\tandi $a0, 0xFF",
+                    "\tsw $a0, 4($sp)"
                 ]
             }
         },
